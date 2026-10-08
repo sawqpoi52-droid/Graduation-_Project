@@ -31,37 +31,10 @@ try {
 }
 
 let cron;
-let Resend;
-let resendInstance;
-let sgMail;
-
 try {
     cron = require('node-cron');
 } catch (e) {
     console.error('CRITICAL: node-cron is NOT installed. Scheduled reports will not work.');
-}
-
-// 1. SendGrid Setup (Top Priority - Works Everywhere)
-try {
-    sgMail = require('@sendgrid/mail');
-    if (process.env.SENDGRID_API_KEY) {
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-        console.log('[Email] SendGrid API initialized (Elite Mode)');
-    }
-} catch (e) {
-    console.warn('[Email] SendGrid package missing.');
-}
-
-// 2. Resend Setup (Secondary Backup)
-try {
-    const { Resend: ResendPkg } = require('resend');
-    Resend = ResendPkg;
-    if (process.env.RESEND_API_KEY) {
-        resendInstance = new Resend(process.env.RESEND_API_KEY);
-        console.log('[Email] Resend API initialized');
-    }
-} catch (e) {
-    console.warn('[Email] Resend package missing.');
 }
 
 
@@ -353,15 +326,17 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
     'http://localhost:5173', 
     'http://localhost:5000', 
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5000',
     'https://securecheck-yn7d.onrender.com'
 ];
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost') || origin.includes('127.0.0.1')) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            callback(null, true);
         }
     },
     credentials: true
@@ -387,7 +362,7 @@ app.use((req, res, next) => {
 // 2. Global Rate Limiting
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per window
+    limit: 1000, // Limit each IP per window
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: { error: 'Too many requests from this IP, please try again later.' }
@@ -397,8 +372,8 @@ app.use(globalLimiter);
 // 3. Strict Rate Limiting for Security Checks & Subscriptions
 const strictLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    limit: 20, // Match documentation: 20 requests per hour
-    message: { error: 'Security scan limit reached for this hour. Please wait for 1 hour.' }
+    limit: 500, // Relaxed for smooth testing and demonstration
+    message: { error: 'تم تجاوز الحد المسموح للفحص في هذه الساعة. يرجى الانتظار قليلاً.' }
 });
 app.use('/api/check', strictLimiter);
 app.use('/api/check-password', strictLimiter);
@@ -482,59 +457,11 @@ async function sendNotificationEmail(to, subject, htmlContent, attachments = [],
             return { success: true };
         } catch (error) {
             console.warn(`[Email Warning (SMTP)] SMTP failed:`, error.message);
+            return { success: false, error: error.message };
         }
     }
 
-    // 2. TRY SENDGRID (Fallback)
-    if (sgMail && process.env.SENDGRID_API_KEY && !process.env.SENDGRID_API_KEY.includes('YOUR_')) {
-        try {
-            console.log(`[Email] Attempting SendGrid fallback...`);
-            const msg = {
-                to: to.trim(),
-                from: { email: fromEmail, name: fromName },
-                subject: subject,
-                text: `${subject}\n\nSecurity report from SecureCheck`,
-                html: htmlContent,
-                attachments: attachments
-                    .filter(a => a.content)
-                    .map(a => ({
-                        content: Buffer.isBuffer(a.content) ? a.content.toString('base64') : Buffer.from(a.content).toString('base64'),
-                        filename: a.filename,
-                        type: 'application/pdf',
-                        disposition: 'attachment'
-                    }))
-            };
-            await sgMail.send(msg);
-            console.log(`[Email Success] SendGrid fallback delivered.`);
-            return { success: true };
-        } catch (error) {
-            const sgErr = error.response ? JSON.stringify(error.response.body) : error.message;
-            console.error('[Email Error (SendGrid)]', sgErr);
-        }
-    }
-
-    // 3. TRY RESEND (Last Resort)
-    if (resendInstance && process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes('YOUR_')) {
-        try {
-            console.log(`[Email] Attempting Resend fallback...`);
-            await resendInstance.emails.send({
-                from: 'SecureCheck <onboarding@resend.dev>',
-                to: to,
-                subject: subject,
-                html: htmlContent,
-                attachments: attachments.map(a => ({
-                    filename: a.filename,
-                    content: a.content.toString('base64')
-                }))
-            });
-            console.log(`[Email Success] Resend fallback delivered.`);
-            return { success: true };
-        } catch (error) {
-            console.error('[Email Error (Resend)] Fallback failed.', error.message);
-        }
-    }
-
-    return { success: false, error: 'All delivery channels failed. Check SMTP credentials in .env' };
+    return { success: false, error: 'Email transporter not configured. Check SMTP credentials in .env' };
 }
 
 // Debug endpoint to check SMTP
@@ -679,8 +606,13 @@ app.get('/api/crawler-status', async (req, res) => {
 // ============================= ADMIN DATABASE VIEWER API =============================
 
 // Serve the admin page
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'frontend', 'admin.html'));
+app.get(['/admin', '/admin/'], (req, res) => {
+    const adminPath = path.join(__dirname, '..', 'frontend', 'admin.html');
+    if (fs.existsSync(adminPath)) {
+        return res.sendFile(adminPath);
+    }
+    const distAdmin = path.join(__dirname, '..', 'frontend', 'dist', 'admin.html');
+    return res.sendFile(distAdmin);
 });
 
 // Get all subscribers (decrypted for admin view)
@@ -1263,7 +1195,7 @@ async function initDatabase() {
 // Final catch-all for SPA
 if (fs.existsSync(FRONTEND_PATH)) {
     app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api')) {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/admin')) {
             res.sendFile(path.join(FRONTEND_PATH, 'index.html'));
         }
     });

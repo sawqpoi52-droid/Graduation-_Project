@@ -112,6 +112,16 @@ function App() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{t('title')}</h1>
                 </div>
                 <div className="flex items-center gap-4">
+                    <a
+                        href="/admin"
+                        className="px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all font-bold text-sm shadow-sm flex items-center gap-2"
+                        title={lang === 'ar' ? 'لوحة تحكم المشرف' : 'Admin Dashboard'}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                        </svg>
+                        <span>{lang === 'ar' ? 'لوحة المشرف' : 'Admin'}</span>
+                    </a>
                     <button
                         onClick={toggleLanguage}
                         className="px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all font-bold text-sm shadow-sm"
@@ -136,12 +146,24 @@ function App() {
                             <p className="text-xl text-gray-500 dark:text-gray-400 leading-relaxed">
                                 {t('heroSubtitle')}
                             </p>
+                            {/* Leaks Counter */}
+                            <div className="mt-4 inline-flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-blue-100 dark:border-blue-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                                </svg>
+                                <span>{t('leaksCounterText').replace('{count}', leaksCount.toLocaleString())}</span>
+                            </div>
                         </div>
                     )}
 
                     {!result ? (
-                        <div className="w-full max-w-md mx-auto space-y-8">
+                        <div className="w-full max-w-md mx-auto space-y-4">
                             <EmailForm onCheck={checkIdentifier} loading={loading} t={t} />
+                            {error && (
+                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm font-bold text-center">
+                                    {error}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="w-full space-y-12 max-w-3xl mx-auto">
