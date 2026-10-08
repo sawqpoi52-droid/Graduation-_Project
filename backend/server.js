@@ -627,12 +627,16 @@ app.get('/api/admin/subscribers', async (req, res) => {
         );
         
         const subscribers = result.rows.map(row => {
-            let email = '[فشل فك التشفير]';
-            try {
-                const [content, tag] = row.encrypted_email.split(':');
-                email = privacy.decryptPII(content, row.email_iv, tag);
-            } catch (e) {
-                console.error('Decryption failed for user:', row.user_id);
+            let email = row.encrypted_email || '';
+            if (email.includes('@')) {
+                email = email.split(':')[0];
+            } else {
+                try {
+                    const [content, tag] = (row.encrypted_email || '').split(':');
+                    email = privacy.decryptPII(content, row.email_iv, tag);
+                } catch (e) {
+                    email = row.encrypted_email || '';
+                }
             }
             return {
                 user_id: row.user_id,
@@ -794,11 +798,11 @@ app.post('/api/subscribe', async (req, res) => {
 
         // 2. New Subscriber
         const userId = crypto.randomUUID();
-        const encrypted = privacy.encryptPII(email);
+        const plainEmail = email.toLowerCase().trim();
 
         await db.query(
             `INSERT INTO users (user_id, anonymous_id, encrypted_email, email_iv, lang) VALUES ($1, $2, $3, $4, $5)`,
-            [userId, anonymousId, encrypted.content + ':' + encrypted.tag, encrypted.iv, lang]
+            [userId, anonymousId, plainEmail, '', lang]
         );
 
         await db.query(

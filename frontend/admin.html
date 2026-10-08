@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureCheck | لوحة العمليات الأمنية والإدارة المركزية</title>
+    <title>SecureCheck | لوحة العمليات والإدارة المركزية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <script>
@@ -19,9 +19,7 @@
                         corp: {
                             bg: '#0b0f19',
                             card: '#111827',
-                            cardHover: '#162032',
                             border: '#1f2937',
-                            borderLight: '#374151',
                             subtext: '#9ca3af'
                         }
                     }
@@ -69,127 +67,66 @@
 
     <div class="max-w-7xl mx-auto space-y-6">
 
-        <!-- Institutional Header -->
+        <!-- Header -->
         <header class="bg-corp-card border border-corp-border rounded-xl p-5 sm:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 shadow-sm">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-blue-400 font-bold text-xl shadow-inner">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white font-['Cairo']">منظومة SecureCheck</h1>
+                    <span class="text-xs font-semibold uppercase tracking-wider bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded">
+                        لوحة تحكم الإدارة
+                    </span>
                 </div>
-                <div>
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white font-['Cairo']">منظومة SecureCheck للرصد السيبراني</h1>
-                        <span class="text-[11px] font-semibold uppercase tracking-wider bg-slate-800 border border-slate-700 text-slate-300 px-2 py-0.5 rounded">
-                            SOC Admin Console
-                        </span>
-                    </div>
-                    <p class="text-corp-subtext text-xs sm:text-sm mt-0.5">لوحة العمليات الإدارية، التحقق من السجلات، ومراقبة خوارزميات الاستخبار مفتوحة المصدر (OSINT)</p>
-                </div>
+                <p class="text-corp-subtext text-xs sm:text-sm mt-1">إدارة المشتركين، قاعدة البيانات، وتشغيل خوارزمية جمع البيانات المسربة</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <a href="/" class="btn-official px-4 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 rounded-lg text-sm font-medium flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                    </svg>
-                    <span>العودة للواجهة الرئيسية</span>
+                <a href="/" class="btn-official px-4 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 rounded-lg text-sm font-medium text-center">
+                    العودة للواجهة الرئيسية
                 </a>
 
-                <button id="btn-trigger-crawler" onclick="triggerCrawler()" class="btn-official px-4 py-2 bg-blue-700 hover:bg-blue-600 border border-blue-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm">
-                    <svg id="crawler-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
-                    <svg id="crawler-spinner" class="w-4 h-4 animate-spin hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span id="crawler-text">تشغيل دورة زحف فورية</span>
+                <button id="btn-trigger-crawler" onclick="triggerCrawler()" class="btn-official px-4 py-2 bg-blue-700 hover:bg-blue-600 border border-blue-600 text-white rounded-lg text-sm font-semibold text-center shadow-sm">
+                    <span id="crawler-text">تشغيل دورة زحف جديدة</span>
                 </button>
             </div>
         </header>
 
-        <!-- System Status Bar -->
-        <div class="bg-slate-900 border border-corp-border rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between text-xs text-corp-subtext gap-3">
-            <div class="flex items-center gap-4 flex-wrap">
-                <span class="flex items-center gap-1.5 font-medium text-slate-300">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                    حالة النظام: تشغيلي (Operational)
-                </span>
-                <span class="text-slate-600">|</span>
-                <span>قاعدة البيانات: <strong class="text-slate-300 font-mono">SQLite (WAL Mode)</strong></span>
-                <span class="text-slate-600">|</span>
-                <span>تشفير المشتركين: <strong class="text-slate-300 font-mono">AES-256-GCM</strong></span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span>بروتوكول الرصد:</span>
-                <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-700">OSINT Multi-Feed</span>
-            </div>
-        </div>
-
-        <!-- Metrics Grid (Executive KPI Cards) -->
+        <!-- Metrics Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="stats-container">
             <!-- Card 1 -->
             <div class="bg-corp-card border border-corp-border rounded-xl p-5">
-                <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-semibold text-corp-subtext">الحسابات المسربة المرصودة</span>
-                    <span class="p-1.5 bg-red-950/60 border border-red-900/60 text-red-400 rounded">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                    </span>
-                </div>
+                <div class="text-xs font-semibold text-corp-subtext mb-2">الحسابات المسربة المسجلة</div>
                 <div class="text-3xl font-bold text-white font-['Cairo'] tracking-tight" id="stat-leaks">--</div>
-                <p class="text-[11px] text-corp-subtext mt-1.5">مفهرسة في قاعدة البيانات المحلية</p>
+                <p class="text-[11px] text-corp-subtext mt-2">إجمالي المسجل في قاعدة البيانات</p>
             </div>
 
             <!-- Card 2 -->
             <div class="bg-corp-card border border-corp-border rounded-xl p-5">
-                <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-semibold text-corp-subtext">المشتركون النشطون بالتنبيهات</span>
-                    <span class="p-1.5 bg-blue-950/60 border border-blue-900/60 text-blue-400 rounded">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.999-3.199a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
-                    </span>
-                </div>
+                <div class="text-xs font-semibold text-corp-subtext mb-2">المشتركون في خدمة التنبيهات</div>
                 <div class="text-3xl font-bold text-white font-['Cairo'] tracking-tight" id="stat-subscribers">--</div>
-                <p class="text-[11px] text-corp-subtext mt-1.5">مشفرة بـ AES-256 للمراقبة الدورية</p>
+                <p class="text-[11px] text-corp-subtext mt-2">الحسابات المسجلة لاستلام التقارير</p>
             </div>
 
             <!-- Card 3 -->
             <div class="bg-corp-card border border-corp-border rounded-xl p-5">
-                <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-semibold text-corp-subtext">جلسات الفحص المنفذة</span>
-                    <span class="p-1.5 bg-emerald-950/60 border border-emerald-900/60 text-emerald-400 rounded">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </span>
-                </div>
+                <div class="text-xs font-semibold text-corp-subtext mb-2">عمليات الفحص المنفذة</div>
                 <div class="text-3xl font-bold text-white font-['Cairo'] tracking-tight" id="stat-scans">--</div>
-                <p class="text-[11px] text-corp-subtext mt-1.5">بدون تخزين أي مدخلات للزوار (Zero-Knowledge)</p>
+                <p class="text-[11px] text-corp-subtext mt-2">إجمالي الفحوصات المنفذة عبر الموقع</p>
             </div>
 
             <!-- Card 4 -->
             <div class="bg-corp-card border border-corp-border rounded-xl p-5">
-                <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-semibold text-corp-subtext">محرك الاستخبار الرقمي</span>
-                    <span class="p-1.5 bg-slate-800 border border-slate-700 text-slate-300 rounded">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
-                    </span>
-                </div>
-                <div class="text-xl font-bold text-emerald-400 font-['Cairo'] tracking-tight flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span>جاهز للاستعلام</span>
-                </div>
-                <p class="text-[11px] text-corp-subtext mt-2.5">20 مستودع نشط + خلاصات أمنية</p>
+                <div class="text-xs font-semibold text-corp-subtext mb-2">حالة خوارزمية الزحف</div>
+                <div class="text-xl font-bold text-emerald-400 font-['Cairo'] tracking-tight mt-1">جاهزة للتشغيل</div>
+                <p class="text-[11px] text-corp-subtext mt-2.5">تحديث دوري من المستودعات العامة</p>
             </div>
         </div>
 
-        <!-- Crawler Activity Panel (Hidden when idle, displays live operations) -->
-        <div id="crawler-progress-panel" class="hidden bg-slate-900 border border-blue-900/60 rounded-xl p-5 shadow-sm space-y-4">
+        <!-- Crawler Activity Panel -->
+        <div id="crawler-progress-panel" class="hidden bg-slate-900 border border-blue-900/60 rounded-xl p-5 shadow-sm space-y-3">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="w-3 h-3 rounded-full bg-blue-500 animate-ping"></span>
-                    <div>
-                        <h3 class="text-sm font-bold text-white font-['Cairo']" id="crawl-title">جاري تشغيل دورة الزحف السيبراني...</h3>
-                        <p class="text-xs text-corp-subtext" id="crawl-desc">فحص المساهمات العامة ومستودعات البيانات المفتوحة واستخراج السجلات</p>
-                    </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white font-['Cairo']" id="crawl-title">جاري تشغيل خوارزمية الزحف...</h3>
+                    <p class="text-xs text-corp-subtext" id="crawl-desc">يتم فحص المصادر العامة واستخراج الحسابات المسربة وإضافتها للقاعدة</p>
                 </div>
                 <span class="text-xs font-mono bg-slate-800 text-blue-300 px-3 py-1 rounded border border-slate-700" id="crawl-timer">00:00</span>
             </div>
@@ -199,35 +136,30 @@
             </div>
 
             <div class="flex justify-between items-center text-xs text-corp-subtext border-t border-slate-800 pt-3">
-                <span id="crawl-status-text">الاتصال بالمصادر المفتوحة...</span>
-                <span>سجلات جديدة مضافة: <strong class="text-emerald-400 font-mono" id="crawl-new">0</strong></span>
+                <span id="crawl-status-text">الاتصال بالمصادر...</span>
+                <span>إيميلات جديدة مضافة: <strong class="text-emerald-400 font-mono" id="crawl-new">0</strong></span>
             </div>
         </div>
 
-        <!-- Data Sections -->
+        <!-- Tables Section -->
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-            <!-- Section 1: Subscribers Registry -->
+            <!-- Section 1: Subscribers Table -->
             <div class="bg-corp-card border border-corp-border rounded-xl flex flex-col overflow-hidden shadow-sm">
                 <div class="p-4 sm:p-5 border-b border-corp-border bg-slate-900/60 flex justify-between items-center">
                     <div>
-                        <h2 class="text-base font-bold text-white font-['Cairo'] flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-blue-400">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                            </svg>
-                            سجل المشتركين في خدمة التنبيهات
-                        </h2>
-                        <p class="text-xs text-corp-subtext mt-0.5">البيانات مشفرة بقاعدة البيانات ومفكوكة هنا بصلاحية المشرف الأمني</p>
+                        <h2 class="text-base font-bold text-white font-['Cairo']">قائمة المشتركين في خدمة التنبيهات</h2>
+                        <p class="text-xs text-corp-subtext mt-0.5">الحسابات المسجلة لاستلام التنبيهات الدورية</p>
                     </div>
                     <span class="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-1 rounded font-mono" id="subscribers-count-badge">--</span>
                 </div>
 
                 <div class="overflow-x-auto custom-scroll flex-1">
                     <table class="w-full text-right border-collapse whitespace-nowrap text-sm">
-                        <thead class="bg-slate-900/90 text-slate-400 border-b border-corp-border text-xs uppercase">
+                        <thead class="bg-slate-900/90 text-slate-400 border-b border-corp-border text-xs">
                             <tr>
-                                <th class="p-3.5 font-semibold">البريد الإلكتروني</th>
-                                <th class="p-3.5 font-semibold text-center">دورية التقرير</th>
+                                <th class="p-3.5 font-semibold">بريد المشترك</th>
+                                <th class="p-3.5 font-semibold text-center">نوع الاشتراك</th>
                                 <th class="p-3.5 font-semibold text-center">التسريبات</th>
                                 <th class="p-3.5 font-semibold text-center">الحالة</th>
                             </tr>
@@ -241,30 +173,25 @@
                 </div>
             </div>
 
-            <!-- Section 2: Leaked Credentials Directory -->
+            <!-- Section 2: Leaked Accounts Table -->
             <div class="bg-corp-card border border-corp-border rounded-xl flex flex-col overflow-hidden shadow-sm">
                 <div class="p-4 sm:p-5 border-b border-corp-border bg-slate-900/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
-                        <h2 class="text-base font-bold text-white font-['Cairo'] flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-red-400">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                            </svg>
-                            قاعدة التسريبات المرصودة (OSINT Intel)
-                        </h2>
-                        <p class="text-xs text-corp-subtext mt-0.5">الحسابات والبيانات المسربة التي تم رصدها وتوثيقها محلياً</p>
+                        <h2 class="text-base font-bold text-white font-['Cairo']">قاعدة بيانات التسريبات</h2>
+                        <p class="text-xs text-corp-subtext mt-0.5">الحسابات المسربة المكتشفة والمخزنة في النظام</p>
                     </div>
 
                     <div class="w-full sm:w-auto">
-                        <input type="text" id="leak-search" oninput="filterLeaksLocally(this.value)" placeholder="تصفية السجلات..." class="w-full sm:w-48 bg-slate-950 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs placeholder:text-slate-500 focus:outline-none focus:border-blue-500" dir="ltr" />
+                        <input type="text" id="leak-search" oninput="filterLeaksLocally(this.value)" placeholder="بحث في السجلات..." class="w-full sm:w-48 bg-slate-950 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs placeholder:text-slate-500 focus:outline-none focus:border-blue-500" dir="ltr" />
                     </div>
                 </div>
 
                 <div class="overflow-x-auto custom-scroll flex-1">
                     <table class="w-full text-right border-collapse whitespace-nowrap text-sm">
-                        <thead class="bg-slate-900/90 text-slate-400 border-b border-corp-border text-xs uppercase">
+                        <thead class="bg-slate-900/90 text-slate-400 border-b border-corp-border text-xs">
                             <tr>
-                                <th class="p-3.5 font-semibold">المعرف / البريد المسرب</th>
-                                <th class="p-3.5 font-semibold text-center w-36">تاريخ الرصد</th>
+                                <th class="p-3.5 font-semibold">البريد المسرب</th>
+                                <th class="p-3.5 font-semibold text-center w-36">تاريخ الإضافة</th>
                                 <th class="p-3.5 font-semibold text-center w-28">المصدر</th>
                             </tr>
                         </thead>
@@ -279,31 +206,21 @@
                 <div class="p-3.5 bg-slate-900/40 border-t border-corp-border flex items-center justify-between text-xs text-corp-subtext">
                     <span id="leaks-pagination-info">عرض السجلات</span>
                     <button id="btn-load-more" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 rounded font-medium transition-colors hidden">
-                        تحميل المزيد من السجلات
+                        تحميل المزيد
                     </button>
                 </div>
             </div>
 
         </div>
 
-        <!-- Academic & Standards Specifications Footer -->
-        <footer class="bg-slate-900/60 border border-corp-border rounded-xl p-4 sm:p-5 text-xs text-corp-subtext">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div class="space-y-1">
-                    <p class="font-bold text-slate-300 font-['Cairo']">مشروع التخرج: SecureCheck — نظام الكشف عن تسريبات البيانات والإنذار المبكر</p>
-                    <p class="text-[11px] text-slate-500">تم البناء بمعمارية Privacy-First: لا يتم تخزين كلمات المرور نهائياً وتشفير البريد الساكن بـ AES-256 ومطابقة k-Anonymity بنظام 5-Hex Prefix</p>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="bg-slate-800 border border-slate-700 text-slate-400 px-2.5 py-1 rounded font-mono text-[11px]">GDPR Art. 17 Compliant</span>
-                    <span class="bg-slate-800 border border-slate-700 text-slate-400 px-2.5 py-1 rounded font-mono text-[11px]">NIST AES-256</span>
-                    <span class="bg-slate-800 border border-slate-700 text-slate-400 px-2.5 py-1 rounded font-mono text-[11px]">SHA-256 k-Anonymity</span>
-                </div>
-            </div>
+        <!-- Clean Footer -->
+        <footer class="bg-slate-900/60 border border-corp-border rounded-xl p-4 text-xs text-corp-subtext text-center">
+            <p class="font-bold text-slate-300 font-['Cairo']">مشروع التخرج: SecureCheck — نظام الكشف عن تسريبات البيانات والإنذار المبكر</p>
         </footer>
 
     </div>
 
-    <!-- Official Dashboard Logic -->
+    <!-- Logic -->
     <script>
         let currentLeakPage = 1;
         let cachedLeaks = [];
@@ -338,19 +255,19 @@
                 if (subs.length > 0) {
                     tbody.innerHTML = subs.map(sub => {
                         const freqMap = {
-                            'daily': { label: 'يومي', class: 'bg-slate-800 border-slate-700 text-slate-300' },
-                            'weekly': { label: 'أسبوعي', class: 'bg-blue-950 border-blue-900 text-blue-300' },
-                            'monthly': { label: 'شهري', class: 'bg-slate-800 border-slate-700 text-slate-300' }
+                            'daily': 'يومي',
+                            'weekly': 'أسبوعي',
+                            'monthly': 'شهري'
                         };
-                        const freq = freqMap[sub.frequency] || { label: sub.frequency || 'عادي', class: 'bg-slate-800 border-slate-700 text-slate-300' };
+                        const freqLabel = freqMap[sub.frequency] || sub.frequency || 'عادي';
                         const isActive = sub.sub_status === 'active';
 
                         return `
                         <tr class="hover:bg-slate-900/50 transition-colors">
                             <td class="p-3.5 font-medium text-white code-cell" dir="ltr">${escapeHtml(sub.email)}</td>
                             <td class="p-3.5 text-center">
-                                <span class="px-2.5 py-0.5 rounded text-xs border font-medium ${freq.class}">
-                                    ${freq.label}
+                                <span class="px-2.5 py-0.5 rounded text-xs border border-slate-700 bg-slate-800 text-slate-300 font-medium">
+                                    ${freqLabel}
                                 </span>
                             </td>
                             <td class="p-3.5 text-center">
@@ -359,8 +276,7 @@
                                 </span>
                             </td>
                             <td class="p-3.5 text-center">
-                                <span class="inline-flex items-center gap-1.5 text-xs ${isActive ? 'text-emerald-400' : 'text-slate-500'}">
-                                    <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-600'}"></span>
+                                <span class="text-xs ${isActive ? 'text-emerald-400' : 'text-slate-500'}">
                                     ${isActive ? 'نشط' : 'متوقف'}
                                 </span>
                             </td>
@@ -368,7 +284,7 @@
                         `;
                     }).join('');
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-corp-subtext text-xs">لا يوجد مشتركون مسجلون حتى الآن.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-corp-subtext text-xs">لا يوجد مشتركون مسجلون حالياً.</td></tr>`;
                 }
             } catch (err) {
                 console.error(err);
@@ -392,7 +308,7 @@
                     cachedLeaks = [...cachedLeaks, ...(data.leaked_emails || [])];
                 }
 
-                info.textContent = `إجمالي المفهرس: ${(data.total || 0).toLocaleString()} سجل`;
+                info.textContent = `إجمالي المسجل: ${(data.total || 0).toLocaleString()} حساب`;
 
                 renderLeaksTable(cachedLeaks);
 
@@ -403,14 +319,14 @@
                 }
             } catch (err) {
                 console.error(err);
-                if (!append) document.getElementById('leaks-tbody').innerHTML = `<tr><td colspan="3" class="text-center py-10 text-red-400 text-xs">تعذر تحميل سجلات التسريبات.</td></tr>`;
+                if (!append) document.getElementById('leaks-tbody').innerHTML = `<tr><td colspan="3" class="text-center py-10 text-red-400 text-xs">تعذر تحميل السجلات.</td></tr>`;
             }
         }
 
         function renderLeaksTable(items) {
             const tbody = document.getElementById('leaks-tbody');
             if (!items || items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-10 text-corp-subtext text-xs">لا توجد سجلات تسريب تطابق البحث.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-10 text-corp-subtext text-xs">لا توجد سجلات تطابق البحث.</td></tr>`;
                 return;
             }
 
@@ -443,13 +359,11 @@
             fetchLeaks(currentLeakPage, true);
         });
 
-        // Trigger OSINT Crawler with Clean Operational Progress
+        // Trigger OSINT Crawler
         let crawlerInterval = null;
 
         async function triggerCrawler() {
             const btn = document.getElementById('btn-trigger-crawler');
-            const icon = document.getElementById('crawler-icon');
-            const spinner = document.getElementById('crawler-spinner');
             const text = document.getElementById('crawler-text');
             const panel = document.getElementById('crawler-progress-panel');
             const bar = document.getElementById('crawl-bar');
@@ -458,19 +372,15 @@
             const timerEl = document.getElementById('crawl-timer');
             const titleEl = document.getElementById('crawl-title');
 
-            // Button loading state
             btn.disabled = true;
             btn.classList.add('opacity-70', 'cursor-wait');
-            icon.classList.add('hidden');
-            spinner.classList.remove('hidden');
             text.textContent = 'الزحف جاري...';
 
-            // Show and reset progress panel
             panel.classList.remove('hidden');
             bar.style.width = '15%';
             bar.className = 'h-full bg-blue-600 rounded-full transition-all duration-300';
-            titleEl.textContent = 'جاري تشغيل دورة الزحف السيبراني...';
-            statusText.textContent = 'الاتصال بمستودعات المصادر المفتوحة...';
+            titleEl.textContent = 'جاري تشغيل خوارزمية الزحف...';
+            statusText.textContent = 'الاتصال بالمصادر العامة...';
             newCountEl.textContent = '0';
             timerEl.textContent = '00:00';
 
@@ -481,16 +391,15 @@
                 const ss = String(elapsedSec % 60).padStart(2, '0');
                 timerEl.textContent = `${mm}:${ss}`;
 
-                // Incremental progress simulation
                 const progressSteps = [20, 35, 55, 75, 85];
                 const step = progressSteps[Math.min(elapsedSec, progressSteps.length - 1)];
                 bar.style.width = `${step}%`;
 
                 const messages = [
-                    'فحص أحدث الالتزامات (Commits) في مستودعات الأكواد...',
-                    'استخراج الحسابات وعناوين البريد الإلكتروني المضمنة...',
-                    'تصفية الحسابات البرمجية وحسابات البوتات غير الصالحة...',
-                    'إدراج السجلات الجديدة في قاعدة البيانات المحلية وتحديث الفهارس...'
+                    'فحص أحدث الالتزامات في المستودعات العامة...',
+                    'استخراج الحسابات وعناوين البريد الإلكتروني...',
+                    'تصفية الحسابات البرمجية وحسابات البوتات...',
+                    'إدراج السجلات الجديدة في قاعدة البيانات المحلية...'
                 ];
                 statusText.textContent = messages[Math.floor(elapsedSec / 2) % messages.length];
             }, 600);
@@ -506,14 +415,12 @@
                 const addedCount = data.new_emails || 0;
                 newCountEl.textContent = addedCount.toLocaleString();
                 titleEl.textContent = 'اكتملت دورة الزحف بنجاح';
-                statusText.textContent = `تم الانتهاء بنجاح — تم رصد وتوثيق ${addedCount} بريد مسرب جديد وإضافتها للقاعدة.`;
+                statusText.textContent = `تم الانتهاء — تم اكتشاف ${addedCount} بريد مسرب جديد وإضافتها للقاعدة.`;
 
-                // Refresh tables and counts
                 fetchStats();
                 currentLeakPage = 1;
                 fetchLeaks(1);
 
-                // Auto hide status bar after 8 seconds
                 setTimeout(() => {
                     panel.classList.add('hidden');
                 }, 8000);
@@ -522,13 +429,11 @@
                 clearInterval(crawlerInterval);
                 bar.className = 'h-full bg-red-600 rounded-full';
                 titleEl.textContent = 'فشل أثناء دورة الزحف';
-                statusText.textContent = 'تعذر استكمال دورة الزحف. تحقق من اتصال الخادم.';
+                statusText.textContent = 'تعذر استكمال دورة الزحف. تأكد أن السيرفر يعمل.';
             } finally {
                 btn.disabled = false;
                 btn.classList.remove('opacity-70', 'cursor-wait');
-                icon.classList.remove('hidden');
-                spinner.classList.add('hidden');
-                text.textContent = 'تشغيل دورة زحف فورية';
+                text.textContent = 'تشغيل دورة زحف جديدة';
             }
         }
 
@@ -542,7 +447,6 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Initialize on load
         fetchStats();
         fetchSubscribers();
         fetchLeaks(1);
