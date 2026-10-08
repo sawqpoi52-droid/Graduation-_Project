@@ -380,26 +380,36 @@ app.use('/api/check-password', strictLimiter);
 app.use('/api/subscribe', strictLimiter);
 app.use('/api/send-report-now', strictLimiter);
 
-// 3.5 Password Check Proxy (To avoid CORS issues in production)
+// 3.5 Password Check Proxy (k-Anonymity model: sends only 5-hex prefix)
 app.get('/api/check-password', async (req, res) => {
     const { hash } = req.query;
     if (!hash || hash.length < 5) return res.status(400).json({ error: 'Valid hash prefix required' });
 
+    const prefix = hash.substring(0, 5).toUpperCase();
+
+    // 1. Primary: Global k-Anonymity Passwords Database (Free, no API key, >1 Billion real passwords)
     try {
-        const prefix = hash.substring(0, 5).toUpperCase();
-        const result = await db.query("SELECT password_hash, exposure_count FROM leaked_passwords WHERE password_hash LIKE $1", [prefix + '%']);
-        
-        let responseText = '';
-        if (result.rows && result.rows.length > 0) {
-            responseText = result.rows.map(row => {
-                const suffix = row.password_hash.substring(5).toUpperCase();
-                return `${suffix}:${row.exposure_count}`;
-            }).join('\n');
+        const response = await axios.get(`https://api.pwnedpasswords.com/range/${prefix}`, {
+            headers: { 'User-Agent': 'SecureCheck-App' },
+            timeout: 5000
+        });
+        return res.type('text/plain').send(response.data);
+    } catch (apiError) {
+        // 2. Offline Fallback: Local database
+        try {
+            const result = await db.query("SELECT password_hash, exposure_count FROM leaked_passwords WHERE password_hash LIKE $1", [prefix + '%']);
+            let responseText = '';
+            if (result.rows && result.rows.length > 0) {
+                responseText = result.rows.map(row => {
+                    const suffix = row.password_hash.substring(5).toUpperCase();
+                    return `${suffix}:${row.exposure_count}`;
+                }).join('\n');
+            }
+            return res.type('text/plain').send(responseText);
+        } catch (dbError) {
+            console.error('Password Check Error:', dbError.message);
+            return res.status(500).json({ error: 'Failed to check password database' });
         }
-        res.type('text/plain').send(responseText);
-    } catch (error) {
-        console.error('Password API Error:', error.message);
-        res.status(500).json({ error: 'Failed to check password database' });
     }
 });
 
