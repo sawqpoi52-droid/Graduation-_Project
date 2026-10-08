@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureCheck | لوحة تحكم المشرف</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            background-image: radial-gradient(circle at top right, #1e3a8a 0%, transparent 40%),
+                              radial-gradient(circle at bottom left, #1e1b4b 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .hash-cell {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen text-slate-200 antialiased p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <!-- Header -->
+        <header class="glass-card p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-blue-500/30">
+                    S
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white tracking-tight">SecureCheck <span class="text-blue-500">Admin</span></h1>
+                    <p class="text-slate-400 mt-1 font-medium">لوحة التحكم وإدارة قواعد البيانات</p>
+                </div>
+            </div>
+            <a href="/" class="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl transition-all font-semibold flex items-center gap-2">
+                العودة للموقع
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+            </a>
+            <button id="btn-trigger-crawler" onclick="triggerCrawler()" class="px-6 py-3 bg-gradient-to-l from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl transition-all font-semibold flex items-center gap-3 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-95">
+                <svg id="crawler-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <svg id="crawler-spinner" class="w-5 h-5 animate-spin hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="crawler-text">تشغيل الزحف</span>
+            </button>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats-container">
+            <div class="glass-card p-8 flex justify-center"><div class="loader"></div></div>
+            <div class="glass-card p-8 flex justify-center"><div class="loader"></div></div>
+            <div class="glass-card p-8 flex justify-center"><div class="loader"></div></div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            
+            <!-- Subscribers Table -->
+            <div class="glass-card flex flex-col overflow-hidden">
+                <div class="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                        <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+                        </div>
+                        قائمة المشتركين
+                    </h2>
+                </div>
+                <div class="p-0 overflow-x-auto custom-scrollbar flex-1">
+                    <table class="w-full text-right border-collapse whitespace-nowrap">
+                        <thead class="bg-slate-800/50 text-slate-300">
+                            <tr>
+                                <th class="p-4 font-semibold text-sm">البريد الإلكتروني</th>
+                                <th class="p-4 font-semibold text-sm text-center">الخطة</th>
+                                <th class="p-4 font-semibold text-sm text-center">التسريبات</th>
+                                <th class="p-4 font-semibold text-sm text-center">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscribers-tbody" class="divide-y divide-white/5">
+                            <tr><td colspan="4" class="text-center py-12"><div class="loader mx-auto"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Leaked Emails Table -->
+            <div class="glass-card flex flex-col overflow-hidden">
+                <div class="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                        <div class="p-2 bg-red-500/20 text-red-400 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        قاعدة التسريبات
+                    </h2>
+
+                </div>
+                <div class="p-0 overflow-x-auto custom-scrollbar flex-1">
+                    <table class="w-full text-right border-collapse whitespace-nowrap">
+                        <thead class="bg-slate-800/50 text-slate-300">
+                            <tr>
+                                <th class="p-4 font-semibold text-sm">الهاش المشفر</th>
+                                <th class="p-4 font-semibold text-sm w-32 text-center">الاكتشاف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaks-tbody" class="divide-y divide-white/5">
+                            <tr><td colspan="2" class="text-center py-12"><div class="loader mx-auto"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-4 bg-slate-800/30 text-center border-t border-white/5">
+                    <button id="btn-load-more" class="text-blue-400 hover:text-blue-300 text-sm font-bold transition-colors py-2 px-6 rounded-lg hover:bg-blue-500/10 hidden">عرض المزيد من التسريبات...</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentLeakPage = 1;
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/admin/stats');
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const data = await res.json();
+                const container = document.getElementById('stats-container');
+                container.innerHTML = `
+                    <div class="glass-card p-6 relative overflow-hidden group">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="p-3 bg-blue-500/20 text-blue-400 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg></div>
+                            <h3 class="text-slate-300 font-semibold text-lg">المشتركين النشطين</h3>
+                        </div>
+                        <p class="text-5xl font-bold text-white pl-2">${data.active_subscribers}</p>
+                    </div>
+                    
+                    <div class="glass-card p-6 relative overflow-hidden group">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="p-3 bg-red-500/20 text-red-400 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
+                            <h3 class="text-slate-300 font-semibold text-lg">الإيميلات المسربة</h3>
+                        </div>
+                        <p class="text-5xl font-bold text-red-400 pl-2">${data.leaked_emails.toLocaleString()}</p>
+                    </div>
+
+                    <div class="glass-card p-6 relative overflow-hidden group">
+                        <div class="absolute -right-10 -top-10 w-32 h-32 bg-green-500/10 rounded-full blur-2xl group-hover:bg-green-500/20 transition-all"></div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="p-3 bg-green-500/20 text-green-400 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                            <h3 class="text-slate-300 font-semibold text-lg">عمليات الفحص</h3>
+                        </div>
+                        <p class="text-5xl font-bold text-green-400 pl-2">${data.total_scans.toLocaleString()}</p>
+                    </div>
+                `;
+            } catch (err) {
+                console.error(err);
+                document.getElementById('stats-container').innerHTML = '<div class="col-span-3 text-center text-red-400 py-8">فشل في تحميل الإحصائيات. تأكد أن السيرفر يعمل.</div>';
+            }
+        }
+
+        async function fetchSubscribers() {
+            try {
+                const res = await fetch('/api/admin/subscribers');
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                const tbody = document.getElementById('subscribers-tbody');
+                
+                if (data.subscribers && data.subscribers.length > 0) {
+                    tbody.innerHTML = data.subscribers.map(sub => {
+                        const freqLabel = sub.frequency === 'daily' ? 'يومي' : (sub.frequency === 'weekly' ? 'أسبوعي' : 'شهري');
+                        const statusColor = sub.sub_status === 'active' ? 'bg-green-500' : 'bg-slate-500';
+                        return `
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="p-4 font-medium text-white">${sub.email}</td>
+                            <td class="p-4 text-center">
+                                <span class="bg-blue-500/10 text-blue-300 px-3 py-1 rounded-lg text-xs border border-blue-500/20 font-semibold tracking-wide">
+                                    ${freqLabel}
+                                </span>
+                            </td>
+                            <td class="p-4 text-center">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${sub.last_breach_count > 0 ? 'bg-red-500/20 text-red-400 font-bold' : 'bg-green-500/10 text-green-400'}">
+                                    ${sub.last_breach_count}
+                                </span>
+                            </td>
+                            <td class="p-4 text-center">
+                                <span class="inline-flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-white/5">
+                                    <span class="w-2 h-2 rounded-full ${statusColor} shadow-[0_0_8px_rgba(0,0,0,0.5)]"></span>
+                                    ${sub.sub_status === 'active' ? 'نشط' : 'غير نشط'}
+                                </span>
+                            </td>
+                        </tr>
+                    `}).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-12 text-slate-500">لا يوجد مشتركين حالياً.</td></tr>`;
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('subscribers-tbody').innerHTML = `<tr><td colspan="4" class="text-center py-12 text-red-400">فشل في تحميل المشتركين.</td></tr>`;
+            }
+        }
+
+        async function fetchLeaks(page = 1, append = false) {
+            try {
+                const res = await fetch('/api/admin/leaked-emails?page=' + page + '&limit=20');
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                const tbody = document.getElementById('leaks-tbody');
+                const btn = document.getElementById('btn-load-more');
+                
+                const rowsHtml = data.leaked_emails.map(leak => `
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="p-4 hash-cell" dir="ltr">${leak.email_hash}</td>
+                        <td class="p-4 text-slate-400 text-sm text-center font-medium" dir="ltr">
+                            ${new Date(leak.discovered_at).toISOString().split('T')[0]}
+                        </td>
+                    </tr>
+                `).join('');
+
+                if (append) {
+                    tbody.innerHTML += rowsHtml;
+                } else {
+                    tbody.innerHTML = rowsHtml;
+                }
+
+                if (page < data.totalPages) {
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                if(!append) document.getElementById('leaks-tbody').innerHTML = `<tr><td colspan="2" class="text-center py-12 text-red-400">فشل في تحميل التسريبات.</td></tr>`;
+            }
+        }
+
+        document.getElementById('btn-load-more').addEventListener('click', () => {
+            currentLeakPage++;
+            fetchLeaks(currentLeakPage, true);
+        });
+
+        let crawlerPollInterval = null;
+
+        async function triggerCrawler() {
+            const btn = document.getElementById('btn-trigger-crawler');
+            const icon = document.getElementById('crawler-icon');
+            const spinner = document.getElementById('crawler-spinner');
+            const text = document.getElementById('crawler-text');
+
+            // Show the progress panel
+            let panel = document.getElementById('crawler-progress-panel');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'crawler-progress-panel';
+                panel.className = 'glass-card p-6 col-span-1 md:col-span-3';
+                document.getElementById('stats-container').after(panel);
+            }
+
+            // Loading state for button
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'cursor-wait');
+            icon.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            text.textContent = 'الزحف قيد التشغيل...';
+
+            // Initial progress panel
+            panel.innerHTML = `
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                        <svg class="w-6 h-6 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">خوارزمية الزحف تعمل الآن...</h3>
+                        <p class="text-slate-400 text-sm">يتم البحث في GitHub و Reddit عن إيميلات مسربة</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-slate-800/50 rounded-xl p-4 text-center border border-white/5">
+                        <p class="text-slate-400 text-xs mb-1">الوقت المنقضي</p>
+                        <p id="crawl-timer" class="text-2xl font-bold text-white font-mono">0:00</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-xl p-4 text-center border border-white/5">
+                        <p class="text-slate-400 text-xs mb-1">إيميلات جديدة</p>
+                        <p id="crawl-new" class="text-2xl font-bold text-emerald-400 font-mono">0</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-xl p-4 text-center border border-white/5">
+                        <p class="text-slate-400 text-xs mb-1">الإجمالي الآن</p>
+                        <p id="crawl-total" class="text-2xl font-bold text-blue-400 font-mono">...</p>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+                    <div id="crawl-bar" class="h-full rounded-full bg-gradient-to-l from-emerald-400 to-teal-500 transition-all duration-700 shadow-[0_0_12px_rgba(16,185,129,0.4)]" style="width: 5%"></div>
+                </div>
+                <p id="crawl-status-text" class="text-slate-500 text-xs mt-2 text-center">جارِ الاتصال بالمصادر...</p>
+            `;
+
+            // Start polling for live status
+            let startTime = Date.now();
+            crawlerPollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/crawler-status');
+                    const status = await res.json();
+
+                    // Update timer
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const mins = Math.floor(elapsed / 60);
+                    const secs = elapsed % 60;
+                    const timerEl = document.getElementById('crawl-timer');
+                    if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+                    // Update counts
+                    const newEl = document.getElementById('crawl-new');
+                    const totalEl = document.getElementById('crawl-total');
+                    const barEl = document.getElementById('crawl-bar');
+                    const statusText = document.getElementById('crawl-status-text');
+                    
+                    if (newEl) newEl.textContent = status.new_so_far || 0;
+                    if (totalEl) totalEl.textContent = (status.current || 0).toLocaleString();
+                    
+                    // Animate progress bar (pulse between 20-80% while running)
+                    if (barEl && status.running) {
+                        const pulse = 20 + (Math.sin(elapsed * 0.5) + 1) * 30;
+                        barEl.style.width = pulse + '%';
+                    }
+                    if (statusText && status.running) {
+                        const msgs = ['يتم فحص GitHub...', 'يتم فحص Reddit...', 'يتم استخراج الإيميلات...', 'يتم التحقق من التكرار...'];
+                        statusText.textContent = msgs[Math.floor(elapsed / 3) % msgs.length];
+                    }
+                } catch (e) { /* ignore polling errors */ }
+            }, 1000);
+
+            // Actually trigger the crawler (this waits until it finishes)
+            try {
+                const res = await fetch('/api/trigger-crawler');
+                const data = await res.json();
+
+                clearInterval(crawlerPollInterval);
+
+                // Completion state
+                const newCount = data.new_emails || 0;
+                const barEl = document.getElementById('crawl-bar');
+                const statusText = document.getElementById('crawl-status-text');
+                if (barEl) { barEl.style.width = '100%'; barEl.classList.remove('from-emerald-400', 'to-teal-500'); barEl.classList.add('from-green-400', 'to-emerald-500'); }
+                if (statusText) statusText.textContent = `اكتمل الزحف — تم اكتشاف ${newCount} إيميل جديد`;
+
+                const newEl = document.getElementById('crawl-new');
+                if (newEl) { newEl.textContent = newCount; newEl.classList.remove('text-emerald-400'); newEl.classList.add('text-green-300'); }
+                
+                const totalEl = document.getElementById('crawl-total');
+                if (totalEl) totalEl.textContent = (data.after || 0).toLocaleString();
+
+                // Update panel header
+                const panelHeader = panel.querySelector('h3');
+                if (panelHeader) { panelHeader.textContent = 'اكتمل الزحف بنجاح!'; panelHeader.classList.remove('text-white'); panelHeader.classList.add('text-green-400'); }
+                const panelSpinner = panel.querySelector('.animate-spin');
+                if (panelSpinner) panelSpinner.classList.remove('animate-spin');
+
+                // Refresh data
+                fetchStats();
+                currentLeakPage = 1;
+                fetchLeaks();
+
+                // Auto-hide panel after 10 seconds
+                setTimeout(() => {
+                    if (panel) panel.style.transition = 'opacity 0.5s'; panel.style.opacity = '0';
+                    setTimeout(() => { if (panel) panel.remove(); }, 600);
+                }, 10000);
+
+            } catch (err) {
+                clearInterval(crawlerPollInterval);
+                panel.innerHTML = `
+                    <div class="flex items-center gap-3 text-red-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                        <h3 class="text-xl font-bold">❌ فشل تشغيل الزحف</h3>
+                    </div>`;
+                setTimeout(() => { if (panel) panel.remove(); }, 5000);
+            }
+
+            // Reset button
+            btn.disabled = false;
+            btn.classList.remove('opacity-60', 'cursor-wait');
+            icon.classList.remove('hidden');
+            spinner.classList.add('hidden');
+            text.textContent = 'تشغيل الزحف';
+        }
+
+        // Initialize Data
+        fetchStats();
+        fetchSubscribers();
+        fetchLeaks();
+        
+        // Refresh stats periodically
+        setInterval(fetchStats, 5000);
+    </script>
+</body>
+</html>

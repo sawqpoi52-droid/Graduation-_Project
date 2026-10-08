@@ -1,0 +1,26 @@
+{
+    "name": "securecheck-backend",
+    "version": "1.0.0",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "@sendgrid/mail": "^8.1.0",
+        "arabic-reshaper": "^1.1.0",
+        "axios": "^1.6.0",
+        "bidi-js": "^1.0.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "express-rate-limit": "^7.5.1",
+        "helmet": "^7.2.0",
+        "node-cron": "^3.0.3",
+        "nodemailer": "^7.0.13",
+        "pdfkit": "^0.13.0",
+        "pdfmake-rtl": "^2.1.2",
+        "pg": "^8.20.0",
+        "resend": "^3.2.0",
+        "sqlite3": "^6.0.1"
+    }
+}

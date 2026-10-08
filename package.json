@@ -1,0 +1,10 @@
+{
+    "name": "securecheck-project",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "start": "node backend/server.js",
+        "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+        "postinstall": "cd backend && npm install && cd ../frontend && npm install"
+    }
+}
