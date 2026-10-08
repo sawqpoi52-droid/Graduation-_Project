@@ -1,0 +1,42 @@
+name: Trigger Weekly Reports
+on:
+  schedule:
+    # يوم الخميس الساعة 9 مساءً بتوقيت السعودية (UTC+3) = 18:00 UTC
+    # مبكر ساعتين لضمان الوصول قبل 11:59 مساءً حتى مع تأخيرات GitHub
+    - cron: '0 18 * * 4'
+  
+  workflow_dispatch:
+
+jobs:
+  trigger-weekly:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Wake up Render server
+        run: |
+          echo "Waking up Render server..."
+          curl --max-time 60 ${{ secrets.RENDER_BACKEND_URL }} || true
+          echo "Waiting 15 seconds for server to fully wake up..."
+          sleep 15
+
+      - name: Call SecureCheck Backend API (Weekly)
+        run: |
+          echo "Sending weekly report trigger..."
+          
+          RESPONSE=$(curl --fail --max-time 60 -s -w "\n%{http_code}" \
+               -X POST ${{ secrets.RENDER_BACKEND_URL }}/api/trigger-reports \
+               -H "Content-Type: application/json" \
+               -d "{\"frequency\": \"weekly\", \"token\": \"${{ secrets.CRON_SECRET_TOKEN }}\"}")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          
+          echo "Response code: $HTTP_CODE"
+          echo "Response body: $BODY"
+          
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Weekly reports triggered successfully"
+          else
+            echo "❌ Failed with HTTP code: $HTTP_CODE"
+            exit 1
+          fi
