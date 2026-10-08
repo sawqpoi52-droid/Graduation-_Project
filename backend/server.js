@@ -58,8 +58,8 @@ function translateDataClasses(classes, lang) {
 
 async function fetchBreaches(email) {
     const plainEmail = email.toLowerCase().trim();
-    // HASHING DISABLED FOR PRESENTATION: Queries against plaintext email directly
-    const result = await db.query('SELECT * FROM leaked_emails WHERE email_hash = $1', [plainEmail]);
+    const emailHash = crypto.createHash('sha256').update(plainEmail).digest('hex');
+    const result = await db.query('SELECT * FROM leaked_emails WHERE email_hash = $1 OR email_hash = $2', [plainEmail, emailHash]);
     if (result.rows && result.rows.length > 0) {
         return [{
             Name: "OSINT_Web_Crawler",
