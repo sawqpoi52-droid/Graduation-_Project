@@ -112,16 +112,6 @@ function App() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{t('title')}</h1>
                 </div>
                 <div className="flex items-center gap-4">
-                    <a
-                        href="/admin"
-                        className="px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all font-bold text-sm shadow-sm flex items-center gap-2"
-                        title={lang === 'ar' ? 'لوحة تحكم المشرف' : 'Admin Dashboard'}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-                        </svg>
-                        <span>{lang === 'ar' ? 'لوحة المشرف' : 'Admin'}</span>
-                    </a>
                     <button
                         onClick={toggleLanguage}
                         className="px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all font-bold text-sm shadow-sm"
