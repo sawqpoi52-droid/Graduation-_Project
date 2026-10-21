@@ -65,10 +65,6 @@ if (usePostgres) {
             console.error('[Database] Failed to connect to SQLite:', err.message);
         } else {
             console.log('[Database] Connected to SQLite database at:', dbPath);
-            sqliteDb.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
-                if (pragmaErr) console.error('[Database] Failed to enable foreign keys:', pragmaErr.message);
-                else console.log('[Database] Foreign keys enabled.');
-            });
         }
     });
 }

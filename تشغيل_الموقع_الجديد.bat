@@ -1,6 +1,7 @@
 @echo off
-echo Starting SecureCheck Project 2...
-cd SecureCheck_Project2
+echo Starting SecureCheck...
+if exist "SecureCheck_Project2" cd SecureCheck_Project2
+if exist "SecureCheck_Project" cd SecureCheck_Project
 
 :: Start Backend Minimized (This also serves the built frontend)
 start /min "SecureCheck Backend" cmd /c "cd backend && node server.js"

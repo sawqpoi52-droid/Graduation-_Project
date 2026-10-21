@@ -76,7 +76,7 @@ function getStatusLabel(risk, t) {
     return risk.level === 'red' ? t.danger : (risk.level === 'yellow' ? t.warning : t.safe);
 }
 
-function buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, breachCount }) {
+function buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, breachCount, exposures = [] }) {
     const dir = lang === 'ar' ? 'rtl' : 'ltr';
     const align = lang === 'ar' ? 'right' : 'left';
     const helloText = lang === 'ar' ? 'مرحباً،' : 'Hello,';
@@ -84,6 +84,63 @@ function buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, br
     const countLine = breachCount != null
         ? `<p style="margin: 5px 0 0; color: #475569;">${lang === 'ar' ? `إجمالي التسريبات: ${breachCount}` : `Total Breaches: ${breachCount}`}</p>`
         : '';
+
+    let exposuresHtml = '';
+    if (exposures && exposures.length > 0) {
+        const expItems = exposures.map(exp => {
+            const sourceUrl = exp.source_url || '';
+            const sourceLabel = exp.source_type?.includes('commit')
+                ? (lang === 'ar' ? 'GitHub (سجل التضمينات Commit)' : 'GitHub (Commit History)')
+                : exp.source_type?.includes('file')
+                ? (lang === 'ar' ? 'GitHub (ملف برمجي)' : 'GitHub (Source File)')
+                : exp.source_type?.includes('hackernews')
+                ? (lang === 'ar' ? 'Hacker News (نقاش عام)' : 'Hacker News (Public Discussion)')
+                : (exp.source_type || (lang === 'ar' ? 'مصدر عام' : 'Public Source'));
+
+            const repoContext = exp.repo_name || exp.source_context || '';
+
+            return `
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; margin-bottom: 12px; text-align: ${align};">
+                    <div style="font-size: 14px; font-weight: bold; color: #0f172a; margin-bottom: 4px;">
+                        📌 ${sourceLabel} ${repoContext ? `<span style="color: #64748b; font-size: 12px; font-weight: normal;">— ${repoContext}</span>` : ''}
+                    </div>
+                    <div style="font-size: 12px; color: #475569; margin-bottom: 8px;">
+                        ${lang === 'ar' ? 'رابط الموضع الفعلي الذي يحتوي على التسريب:' : 'Direct link to the source containing the leak:'}
+                    </div>
+                    ${sourceUrl ? `
+                    <div style="margin: 8px 0;">
+                        <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 6px;">
+                            ${lang === 'ar' ? 'الانتقال إلى مصدر التسريب مباشرة ↗' : 'View Leak Source Directly ↗'}
+                        </a>
+                        ${(exp.source_type?.includes('commit') || sourceUrl.includes('/commit/')) ? `
+                        <a href="${sourceUrl.endsWith('.patch') ? sourceUrl : sourceUrl + '.patch'}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #d97706; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 6px; margin-inline-start: 6px;">
+                            ${lang === 'ar' ? 'رابط التسريب ↗' : 'Leak Link ↗'}
+                        </a>
+                        ` : ''}
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; word-break: break-all; font-family: monospace; direction: ltr; text-align: left;">
+                        ${sourceUrl}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        exposuresHtml = `
+            <div style="margin: 25px 0; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+                <h3 style="margin: 0 0 12px; color: #0f172a; font-size: 16px;">
+                    ${lang === 'ar' ? '🔗 روابط المصادر التي تحتوي على التسريب الفعلي:' : '🔗 Direct Links to Detected Leak Sources:'}
+                </h3>
+                ${expItems}
+                <p style="margin: 8px 0 0; font-size: 12px; color: #64748b;">
+                    ${lang === 'ar' 
+                        ? 'تنبيه: يقود هذا الرابط مباشرة إلى المصدر الحقيقي الذي تم رصد بريدك الإلكتروني فيه لتتمكن من مراجعته وإزالته.' 
+                        : 'Notice: This link leads directly to the actual source where your email was detected.'}
+                </p>
+            </div>
+        `;
+    }
+
     return `
         <div dir="${dir}" style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; text-align: ${align};">
             <h2 style="color: #2563eb;">${t.reportSubject}</h2>
@@ -93,11 +150,12 @@ function buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, br
                 <h3 style="margin: 0; color: #1e293b;">${t.overallStatus}: ${statusLabel}</h3>
                 ${countLine}
             </div>
+            ${exposuresHtml}
             <p style="color: #64748b; font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 20px;">${t.userId}: ${anonymousId}</p>
         </div>
     `;
 }
-async function generateReportPDF(email, breaches, anonymousId, lang = 'en') {
+async function generateReportPDF(email, breaches, anonymousId, lang = 'en', exposures = []) {
     const t = getT(lang);
     const isAr = lang === 'ar';
 
@@ -305,6 +363,35 @@ async function generateReportPDF(email, breaches, anonymousId, lang = 'en') {
             color: '#059669',
             alignment: 'center',
             margin: [0, 20, 0, 0]
+        });
+    }
+
+    if (exposures && exposures.length > 0) {
+        docDefinition.content.push({
+            text: isAr ? 'مصادر التسريب المكتشفة:' : 'Detected Leak Sources:',
+            fontSize: 16,
+            bold: true,
+            margin: [0, 15, 0, 10]
+        });
+
+        exposures.forEach((exp, idx) => {
+            const expSource = exp.source_type?.includes('github') ? 'GitHub' : (exp.source_type?.includes('hackernews') ? 'Hacker News' : 'Source');
+            const items = [
+                { text: `${idx + 1}. ${expSource} ${exp.repo_name ? `(${exp.repo_name})` : ''}`, bold: true, fontSize: 11, color: '#1e293b' }
+            ];
+            if (exp.source_url) {
+                items.push({
+                    text: `${isAr ? 'رابط المصدر' : 'Source Link'}: ${exp.source_url}`,
+                    link: exp.source_url,
+                    color: '#2563eb',
+                    fontSize: 9,
+                    margin: [0, 3, 0, 0]
+                });
+            }
+            docDefinition.content.push({
+                stack: items,
+                margin: [0, 0, 0, 10]
+            });
         });
     }
 
@@ -913,10 +1000,24 @@ app.post('/api/send-report-now', async (req, res) => {
             await db.query("UPDATE users SET last_breach_count = $1, last_checked = NOW() WHERE user_id = $2", [breaches.length, userSub.rows[0].user_id]);
         }
 
+        // Fetch verified leak exposure locations for this email
+        const plainEmail = email.toLowerCase().trim();
+        const emailHash = crypto.createHash('sha256').update(plainEmail).digest('hex');
+        let exposures = [];
+        try {
+            const expRes = await db.query(
+                'SELECT * FROM exposure_locations WHERE email_hash = $1 OR email_hash = $2 ORDER BY exposure_id ASC LIMIT 5',
+                [plainEmail, emailHash]
+            );
+            exposures = expRes.rows || [];
+        } catch (expErr) {
+            console.warn('[Report] Could not fetch exposure locations:', expErr.message);
+        }
+
         let attachments = [];
         try {
             console.log(`[Report] Starting PDF generation for ${email}...`);
-            const pdfBuffer = await generateReportPDF(email, breaches, anonymousId, lang);
+            const pdfBuffer = await generateReportPDF(email, breaches, anonymousId, lang, exposures);
             console.log(`[Report] PDF generated successfully. Size: ${pdfBuffer.length} bytes`);
             attachments = [{ filename: `SecureCheck_Report_${new Date().toISOString().split('T')[0]}.pdf`, content: pdfBuffer }];
         } catch (pdfErr) {
@@ -927,7 +1028,7 @@ app.post('/api/send-report-now', async (req, res) => {
         const bodyText = lang === 'ar'
             ? "هذا هو التقرير الأمني الخاص ببريدك الإلكتروني، مرفق معه ملف PDF شامل يحتوي على كافة تفاصيل التسريبات المكتشفة ومعلماتها بناءً على خياراتك."
             : "This is the security report for your email address. Attached is a comprehensive PDF file containing all details of detected leaks and their information based on your preferences.";
-        const reportHtml = buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, breachCount: breaches.length });
+        const reportHtml = buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, breachCount: breaches.length, exposures });
 
         const emailResult = await sendNotificationEmail(email, t.reportSubject, reportHtml, attachments, lang);
 
@@ -1015,12 +1116,25 @@ async function sendReportForUser(email, lang, anonymousId, userId) {
     let bodyText = "";
     let attachments = [];
 
+    const plainEmail = email.toLowerCase().trim();
+    const emailHash = crypto.createHash('sha256').update(plainEmail).digest('hex');
+    let exposures = [];
+    try {
+        const expRes = await db.query(
+            'SELECT * FROM exposure_locations WHERE email_hash = $1 OR email_hash = $2 ORDER BY exposure_id ASC LIMIT 5',
+            [plainEmail, emailHash]
+        );
+        exposures = expRes.rows || [];
+    } catch (expErr) {
+        console.warn('[Scheduled Report] Could not fetch exposure locations:', expErr.message);
+    }
+
     if (isNewBreach) {
         bodyText = lang === 'ar'
             ? `تنبيه أمني: لقد تم رصد تسريبات جديدة لبياناتك! زاد عدد التسريبات من ${lastCount} إلى ${breaches.length}. تجد مرفقاً تقريراً كاملاً بالـ PDF.`
             : `Security Alert: New breaches detected! Your leak count increased from ${lastCount} to ${breaches.length}. A full PDF report is attached for details.`;
 
-        const pdfBuffer = await generateReportPDF(email, breaches, anonymousId, lang);
+        const pdfBuffer = await generateReportPDF(email, breaches, anonymousId, lang, exposures);
         attachments.push({ filename: `SecureCheck_Alert_${new Date().toISOString().split('T')[0]}.pdf`, content: pdfBuffer });
     } else {
         bodyText = lang === 'ar'
@@ -1029,7 +1143,7 @@ async function sendReportForUser(email, lang, anonymousId, userId) {
     }
 
     const statusLabel = getStatusLabel(risk, t);
-    const reportHtml = buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId });
+    const reportHtml = buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, exposures });
 
     const emailResult = await sendNotificationEmail(email, t.reportSubject, reportHtml, attachments, lang);
 
@@ -1192,6 +1306,25 @@ async function initDatabase() {
             )
         `);
 
+        // 10. Exposure Locations (Exposure Removal Assistant)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS exposure_locations (
+                exposure_id SERIAL PRIMARY KEY,
+                email_hash CHAR(64) NOT NULL,
+                source_type TEXT NOT NULL,
+                source_url TEXT,
+                source_context TEXT,
+                content_owner TEXT,
+                file_path TEXT,
+                repo_name TEXT,
+                remediation_status TEXT DEFAULT 'discovered',
+                remediation_notes TEXT,
+                last_verified_at TIMESTAMP,
+                discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(email_hash, source_type, source_url)
+            )
+        `);
+
         // Seed with Free Plan if empty
         const plans = await db.query('SELECT count(*) as count FROM subscription_plans');
         if (parseInt(plans.rows[0].count) === 0) {
@@ -1205,6 +1338,386 @@ async function initDatabase() {
     }
 }
 
+
+// ============================= EXPOSURE REMOVAL ASSISTANT (Hidden Feature) =============================
+const EXPOSURE_ASSISTANT_ENABLED = process.env.ENABLE_EXPOSURE_ASSISTANT !== 'false';
+
+function exposureGuard(req, res, next) {
+    if (!EXPOSURE_ASSISTANT_ENABLED) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    next();
+}
+
+// 5. Feature Flags (public endpoint so frontend knows what is enabled)
+app.get('/api/feature-flags', (req, res) => {
+    res.json({ exposureAssistant: EXPOSURE_ASSISTANT_ENABLED });
+});
+
+// 1. Get exposure locations for an email
+app.get('/api/exposures', exposureGuard, async (req, res) => {
+    try {
+        const email = req.query.email;
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({ error: 'Email query parameter is required' });
+        }
+
+        const plainEmail = email.toLowerCase().trim();
+        const emailHash = crypto.createHash('sha256').update(plainEmail).digest('hex');
+
+        const result = await db.query(
+            'SELECT * FROM exposure_locations WHERE email_hash = $1 OR email_hash = $2 ORDER BY discovered_at DESC',
+            [plainEmail, emailHash]
+        );
+
+        res.json({ exposures: result.rows || [] });
+    } catch (err) {
+        console.error('[Exposure Assistant] Error fetching exposures:', err.message);
+        res.status(500).json({ error: 'Failed to retrieve exposures' });
+    }
+});
+
+// 2. Update exposure remediation status and notes
+app.post('/api/exposures/:exposureId/status', exposureGuard, async (req, res) => {
+    try {
+        const { exposureId } = req.params;
+        const { status, notes } = req.body;
+
+        const validStatuses = [
+            'discovered',
+            'removal_requested',
+            'removal_in_progress',
+            'removed',
+            'verified_removed',
+            'cannot_remove'
+        ];
+
+        if (!status || !validStatuses.includes(status)) {
+            return res.status(400).json({
+                error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+            });
+        }
+
+        const result = await db.query(
+            'UPDATE exposure_locations SET remediation_status = $1, remediation_notes = COALESCE($2, remediation_notes) WHERE exposure_id = $3 RETURNING *',
+            [status, notes !== undefined ? notes : null, exposureId]
+        );
+
+        if (!result.rows || result.rows.length === 0) {
+            // In case RETURNING was not returned or id not found, check existing
+            const check = await db.query('SELECT * FROM exposure_locations WHERE exposure_id = $1', [exposureId]);
+            if (!check.rows || check.rows.length === 0) {
+                return res.status(404).json({ error: 'Exposure not found' });
+            }
+            return res.json({ success: true, exposure: check.rows[0] });
+        }
+
+        res.json({ success: true, exposure: result.rows[0] });
+    } catch (err) {
+        console.error('[Exposure Assistant] Error updating status:', err.message);
+        res.status(500).json({ error: 'Failed to update exposure status' });
+    }
+});
+
+// 3. Verify exposure URL status (REAL live verification - never trusts user input)
+app.post('/api/exposures/:exposureId/verify', exposureGuard, async (req, res) => {
+    try {
+        const { exposureId } = req.params;
+        const result = await db.query('SELECT * FROM exposure_locations WHERE exposure_id = $1', [exposureId]);
+
+        if (!result.rows || result.rows.length === 0) {
+            return res.status(404).json({ error: 'Exposure not found' });
+        }
+
+        const exposure = result.rows[0];
+        const sourceUrl = exposure.source_url;
+        const sourceType = exposure.source_type || '';
+
+        let verifiedRemoved = false;
+        let httpStatus = null;
+        let checkReason = '';
+        let message = '';
+
+        if (sourceUrl) {
+            try {
+                let targetUrl = sourceUrl;
+
+                // For Hacker News, check via public Algolia items API to avoid Cloudflare 419 block
+                if (sourceType.includes('hackernews') && sourceUrl.includes('id=')) {
+                    const hnIdMatch = sourceUrl.match(/id=(\d+)/);
+                    if (hnIdMatch && hnIdMatch[1]) {
+                        targetUrl = `https://hn.algolia.com/api/v1/items/${hnIdMatch[1]}`;
+                    }
+                }
+
+                const response = await axios.get(targetUrl, {
+                    timeout: 8000,
+                    maxRedirects: 5,
+                    validateStatus: () => true,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                });
+
+                httpStatus = response.status;
+
+                // REAL INDEPENDENT CHECK:
+                // 1. If 404 Not Found or 410 Gone: The content is permanently deleted from source!
+                if (httpStatus === 404 || httpStatus === 410) {
+                    verifiedRemoved = true;
+                    checkReason = 'url_deleted';
+                    message = `تم التحقق بنجاح: تم فحص الرابط مباشرة على الخادم وتأكيد حذفه نهائياً (كود الاستجابة: ${httpStatus} Not Found).`;
+                } 
+                // 2. If 200 OK: The content is STILL live and accessible!
+                else if (httpStatus === 200 || httpStatus === 301 || httpStatus === 302) {
+                    verifiedRemoved = false;
+                    checkReason = 'content_still_online';
+                    message = `تنبيه: تم فحص الرابط مباشرة على الخادم وتبيّن أن المحتوى لا يزال متاحاً وقابلاً للوصول علناً (كود الاستجابة: ${httpStatus} OK). لم يتم حذفه من المصدر بعد!`;
+                }
+                // 3. If 403 Forbidden or 401 Unauthorized: The repository/page was made private!
+                else if (httpStatus === 403 || httpStatus === 401) {
+                    verifiedRemoved = true;
+                    checkReason = 'made_private';
+                    message = `تم التحقق: تم تغيير صلاحيات الرابط وأصبح خاصاً وغير متاح للعامة (كود الاستجابة: ${httpStatus}).`;
+                }
+                // 4. Any other status
+                else {
+                    verifiedRemoved = false;
+                    checkReason = 'unknown_status';
+                    message = `حالة المصدر غير مؤكدة (كود الاستجابة: ${httpStatus}).`;
+                }
+            } catch (netErr) {
+                if (netErr.code === 'ENOTFOUND' || netErr.code === 'ECONNREFUSED') {
+                    verifiedRemoved = true;
+                    httpStatus = 404;
+                    checkReason = 'domain_unreachable';
+                    message = 'تم التحقق: خادم المصدر لم يعد متاحاً أو تم حذفه بالكامل.';
+                } else {
+                    verifiedRemoved = false;
+                    message = `تعذر الوصول للمصدر للتحقق: ${netErr.message}`;
+                }
+            }
+        } else {
+            verifiedRemoved = false;
+            message = 'لا يوجد رابط مصدر مسجل لهذا الموضع.';
+        }
+
+        const now = new Date();
+        
+        // CRITICAL: NEVER trust the user's manual dropdown status!
+        // The remediation status in DB must strictly reflect the REAL verification result:
+        let newStatus;
+        if (verifiedRemoved) {
+            newStatus = 'verified_removed';
+        } else {
+            // If the user falsely selected 'verified_removed' or 'removed', correct it back to 'removal_in_progress'
+            if (exposure.remediation_status === 'verified_removed' || exposure.remediation_status === 'removed') {
+                newStatus = 'removal_in_progress';
+            } else {
+                newStatus = exposure.remediation_status;
+            }
+        }
+
+        await db.query(
+            'UPDATE exposure_locations SET remediation_status = $1, last_verified_at = $2 WHERE exposure_id = $3',
+            [newStatus, now, exposureId]
+        );
+
+        const updated = await db.query('SELECT * FROM exposure_locations WHERE exposure_id = $1', [exposureId]);
+
+        res.json({
+            success: true,
+            verifiedRemoved,
+            httpStatus,
+            checkReason,
+            message,
+            exposure: updated.rows[0]
+        });
+    } catch (err) {
+        console.error('[Exposure Assistant] Error verifying exposure:', err.message);
+        res.status(500).json({ error: 'Failed to verify exposure' });
+    }
+});
+
+// 4. Removal instructions guidance (Bilingual: ar & en)
+app.get('/api/exposure-instructions', exposureGuard, (req, res) => {
+    const { source_type, lang = 'en' } = req.query;
+    const isAr = lang === 'ar';
+
+    const guidanceCatalog = {
+        github_commit: {
+            title: isAr ? 'إزالة البريد الإلكتروني من سجل الالتزامات (Git Commits)' : 'Remove Email from Git Commit History',
+            owner_instructions: {
+                title: isAr ? 'إذا كنت أنت صاحب المستودع (أو تملك صلاحية التعديل عليه)' : 'If You Own the Repository (or have write access)',
+                steps: isAr ? [
+                    'استنسخ المستودع محلياً على جهازك بواسطة أمر git clone.',
+                    'استخدم أداة git-filter-repo الرسمية لتنقيح تاريخ Git بالكامل واستبدال بريدك الإلكتروني ببريد بديل أو عنوان noreply التابع لـ GitHub عبر تنفيذ الأمر التالي:',
+                    'قم برفع التعديلات بالقوة لتحديث كافة الفروع والوسوم في المستودع البعيد:',
+                    'تواصل مع الدعم الفني لـ GitHub لمسح الذاكرة المؤقتة للتضمينات (Cached Commits) وأرقام الـ SHA المعزولة لضمان حذفها نهائياً من خوادم GitHub.',
+                    'قم بتفعيل خيار "Keep my email addresses private" وخيار "Block command line pushes that expose my email" من إعدادات حسابك على GitHub لمنع تكرار التسريب مستقبلاً.'
+                ] : [
+                    'Clone a fresh copy of the repository to your local machine using git clone.',
+                    'Use the official git-filter-repo tool to rewrite Git history and replace your exposed email with a noreply address:',
+                    'Force push the rewritten branches and tags to the remote repository:',
+                    'Contact GitHub Support to purge unreachable cached commit objects and commit SHAs.',
+                    'Enable "Keep my email addresses private" and "Block command line pushes that expose my email" in GitHub Settings.'
+                ],
+                commands: [
+                    'git filter-repo --email-callback "return email.replace(b\'YOUR_EMAIL\', b\'noreply@users.noreply.github.com\')"',
+                    'git push origin --force --all && git push origin --force --tags'
+                ]
+            },
+            third_party_instructions: {
+                title: isAr ? 'إذا كان المستودع مملوكاً لشخص آخر (لست صاحب المستودع)' : 'If the Repository Belongs to Someone Else',
+                steps: isAr ? [
+                    'تواصل أولاً مع مالك المستودع عبر فتح Issue أو مراسلته على بريده المعلن في ملف التعريف واطلب منه تنقيح بريدك بلباقة.',
+                    'يمكنك نسخ نموذج المراسلة الجاهز أدناه وإرساله لمالك المستودع مباشرة.',
+                    'في حال لم يتجاوب المالك خلال 48 ساعة أو رفض التعاون، قم بتقديم طلب رسمي ومباشر لإدارة GitHub لحذف بياناتك الشخصية عبر نموذج انتهاك الخصوصية الرسمي (GitHub Private Information Removal).'
+                ] : [
+                    'Contact the repository maintainer by opening a GitHub Issue or emailing them requesting redaction.',
+                    'You can use the ready-made message template below to send to the repository maintainer.',
+                    'If the maintainer does not respond within 48 hours, submit an official takedown request directly to GitHub using the Private Information Removal form.'
+                ],
+                template_message: isAr
+                    ? 'مرحباً، لقد لاحظت ظهور بريدي الإلكتروني الشخصي منشوراً في سجل هذا المستودع. أرجو منكم التكرم بإزالته أو تنقيحه حفاظاً على الخصوصية. شاكراً ومقدراً حسن تعاونكم.'
+                    : 'Hello, I noticed that my personal email address is exposed in this repository history. Could you please redact or remove it for privacy reasons? Thank you for your assistance.',
+                official_form_url: 'https://support.github.com/contact/private-information-removal'
+            }
+        },
+        github_file: {
+            title: isAr ? 'إزالة البريد الإلكتروني من ملف داخل المستودع' : 'Remove Email from a Repository File',
+            owner_instructions: {
+                title: isAr ? 'إذا كنت أنت صاحب المستودع' : 'If You Own the Repository',
+                steps: isAr ? [
+                    'افتح الملف المعني في محرر الأكواد أو عبر واجهة GitHub مباشرة بالضغط على أيقونة التعديل (Edit).',
+                    'احذف بريدك الإلكتروني أو استبدله بمتغير بيئة عام (Environment Variable).',
+                    'احفظ التعديلات وقم بعمل Commit جديد لتحديث الملف في المستودع.',
+                    'تحقق من تاريخ التعديلات (Commit History) للتأكد من عدم بقاء البريد في النسخ القديمة؛ وإذا وُجد استخدم أداة git-filter-repo لحذفه من السجل.'
+                ] : [
+                    'Open the file locally or in GitHub web interface and click Edit.',
+                    'Remove your email address or replace it with a placeholder/environment variable.',
+                    'Commit the changes to update the file on the main branch.',
+                    'Check previous revisions to ensure the email is not retained in old commits; if it is, use git-filter-repo.'
+                ]
+            },
+            third_party_instructions: {
+                title: isAr ? 'إذا كان المستودع مملوكاً لشخص آخر (لست صاحب المستودع)' : 'If the Repository Belongs to Someone Else',
+                steps: isAr ? [
+                    'قم بإنشاء طلب سحب (Pull Request) لحذف البريد من الملف مباشرة، أو افتح Issue لطلب الحذف من المشرفين.',
+                    'استخدم نموذج الطلب المكتوب أدناه لتسهيل التواصل مع مالك المستودع.',
+                    'إذا لم يستجب المالك، توجه لنموذج انتهاك الخصوصية لدى GitHub لطلب الحذف الإجباري للبيانات الشخصية.'
+                ] : [
+                    'Submit a Pull Request editing out your email, or open an Issue requesting maintainers to remove it.',
+                    'Use the ready-made message template below to request removal.',
+                    'If the owner is unresponsive, submit a Private Information Removal Request to GitHub Support.'
+                ],
+                template_message: isAr
+                    ? 'السلام عليكم، أرجو التكرم بحذف بريدي الإلكتروني المذكور في هذا الملف نظراً لاحتوائه على معلومات شخصية خاصة بي. شاكراً لكم تفهمكم.'
+                    : 'Hi, please remove or redact my personal email address listed in this file as it is private information. Thank you for your support.',
+                official_form_url: 'https://support.github.com/contact/private-information-removal'
+            }
+        },
+        github_issue: {
+            title: isAr ? 'إزالة البريد الإلكتروني من تذكرة أو نقاش (Issue / PR)' : 'Remove Email from GitHub Issue or Discussion',
+            owner_instructions: {
+                title: isAr ? 'إذا كنت أنت كاتب المنشور أو صاحب المستودع' : 'If You Wrote the Comment or Own the Repo',
+                steps: isAr ? [
+                    'انقر على قائمة الخيارات الثلاثية (...) في الزاوية العلوية لمنشورك أو تعليقك واضغط على Edit.',
+                    'احذف بريدك الإلكتروني بالكامل ثم اضغط على حفظ التعديل (Update comment).',
+                    'اضغط على كلمة (edited) بجانب اسمك لفتح سجل التعديلات، ثم اختر "Delete revision from history" لمنع أي زائر من قراءة النص الأصلي السابق.'
+                ] : [
+                    'Click the three dots (...) menu on the top right of your comment and select Edit.',
+                    'Delete your email address and click Update comment.',
+                    'Open the (edited) revision history dropdown and click "Delete revision from history" to prevent viewing previous versions.'
+                ]
+            },
+            third_party_instructions: {
+                title: isAr ? 'إذا كان التعليق مكتوباً بواسطة شخص آخر' : 'If Written by Another User',
+                steps: isAr ? [
+                    'اضغط على القائمة الثلاثية (...) في أعلى التعليق واختر "Report content" للإبلاغ عن انتهاك الخصوصية.',
+                    'تواصل مع المشرفين عبر نموذج المراسلة الجاهز أدناه لطلب حذف التعليق وسجل مراجعته.',
+                    'في حال عدم التجاوب، قدّم بلاغاً مباشراً عبر نموذج انتهاك الخصوصية لـ GitHub.'
+                ] : [
+                    'Click the three dots (...) menu on the comment and choose "Report content".',
+                    'Reach out to repository maintainers with the template message below.',
+                    'If not resolved, escalate directly via the GitHub Private Information Removal form.'
+                ],
+                template_message: isAr
+                    ? 'مرحباً، أرجو حذف التعليق أو تنقيح بريدي الإلكتروني الوارد فيه لمنع تسريب بياناتي الشخصية. شكراً جزيلاً.'
+                    : 'Hello, please remove or redact my email address from this comment to protect my personal privacy. Thank you.',
+                official_form_url: 'https://support.github.com/contact/private-information-removal'
+            }
+        },
+        hackernews_comment: {
+            title: isAr ? 'إزالة تعليق في Hacker News' : 'Remove Hacker News Comment Exposure',
+            owner_instructions: {
+                title: isAr ? 'إذا كان التعليق منشوراً من حسابك' : 'If Posted from Your Account',
+                steps: isAr ? [
+                    'إذا نُشر التعليق خلال أقل من ساعتين، اضغط مباشرة على زر "edit" أو "delete" أسفل التعليق لحذفه فوراً.',
+                    'إذا انقضت مهلة الساعتين، تواصل مباشرة مع مشرفي Hacker News عبر إرسال بريد إلكتروني إلى: hn@ycombinator.com من بريدك المسجل واطلب حذفه لحماية الخصوصية.'
+                ] : [
+                    'If posted within 2 hours, click "edit" or "delete" directly under the comment to remove it.',
+                    'If the 2-hour window has expired, email the Hacker News moderators at hn@ycombinator.com from your registered address requesting removal.'
+                ]
+            },
+            third_party_instructions: {
+                title: isAr ? 'إذا نُشر التعليق بواسطة مستخدم آخر' : 'If Posted by Someone Else',
+                steps: isAr ? [
+                    'أرسل رسالة فورية إلى مشرفي Hacker News عبر البريد الإلكتروني: hn@ycombinator.com.',
+                    'قم بتضمين الرابط المباشر للتعليق واذكر بريدك الإلكتروني المسرب واطلب حذفه لانتهاك الخصوصية.',
+                    'مشرفو Y Combinator يتعاونون بسرعة ويحذفون البيانات الشخصية الحساسة لحماية المستخدمين.'
+                ] : [
+                    'Email the Hacker News moderators at hn@ycombinator.com.',
+                    'Include the direct comment URL, specify your exposed email, and request redaction for privacy reasons.',
+                    'Y Combinator staff will review and assist with personal data removal.'
+                ],
+                template_message: isAr
+                    ? 'السادة مشرفو Hacker News، لقد تم نشر بريدي الإلكتروني الشخصي في هذا التعليق دون إذن، أرجو التكرم بحذفه أو تنقيحه حفاظاً على الخصوصية. شكراً لكم.'
+                    : 'Hello Hacker News Moderators, my personal email address was published in this comment without consent. Please remove or redact it for privacy protection. Thank you.',
+                official_form_url: 'mailto:hn@ycombinator.com'
+            }
+        },
+        hackernews_post: {
+            title: isAr ? 'إزالة منشور في Hacker News' : 'Remove Hacker News Post Exposure',
+            owner_instructions: {
+                title: isAr ? 'إذا كان المنشور من حسابك' : 'If Submitted from Your Account',
+                steps: isAr ? [
+                    'إذا كان المنشور حديثاً وبدون ردود، اضغط على زر "delete" أسفل العنوان لحذفه فوراً.',
+                    'إذا كانت هناك تعليقات أو مضى وقت، راسل المشرفين على: hn@ycombinator.com لحذف المنشور أو إخفاء بياناتك.'
+                ] : [
+                    'If submitted recently with no comments, click "delete" directly under the submission.',
+                    'If it has comments or is past the grace period, email moderators at hn@ycombinator.com to redact or delete it.'
+                ]
+            },
+            third_party_instructions: {
+                title: isAr ? 'إذا نُشر المنشور بواسطة شخص آخر' : 'If Submitted by Someone Else',
+                steps: isAr ? [
+                    'راسل المشرفين فوراً على: hn@ycombinator.com.',
+                    'أرفق رابط المنشور واشرح تفاصيل طلب الحذف لحماية خصوصيتك الشخصية.',
+                    'اطلب إخفاء المحتوى أو حذف الرابط المسرب.'
+                ] : [
+                    'Email hn@ycombinator.com with the submission URL.',
+                    'Explain the privacy concern and personal data removal request.',
+                    'Request post redaction or deletion.'
+                ],
+                template_message: isAr
+                    ? 'السادة مشرفو Hacker News، يحتوي هذا المنشور على بريدي الإلكتروني الشخصي. أرجو حذفه لحماية الخصوصية. شكراً لكم.'
+                    : 'Hello Hacker News Moderators, this post exposes my personal email address. I kindly request its removal to safeguard my privacy. Thank you.',
+                official_form_url: 'mailto:hn@ycombinator.com'
+            }
+        }
+    };
+
+    if (source_type) {
+        const item = guidanceCatalog[source_type];
+        if (!item) {
+            return res.status(404).json({ error: `No instructions found for source_type: ${source_type}` });
+        }
+        return res.json({ source_type, ...item });
+    }
+
+    res.json({ instructions: guidanceCatalog });
+});
 
 // Final catch-all for SPA
 if (fs.existsSync(FRONTEND_PATH)) {

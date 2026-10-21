@@ -6,7 +6,6 @@
         "start": "node server.js"
     },
     "dependencies": {
-        "@sendgrid/mail": "^8.1.0",
         "arabic-reshaper": "^1.1.0",
         "axios": "^1.6.0",
         "bidi-js": "^1.0.3",
@@ -21,6 +20,6 @@
         "pdfmake-rtl": "^2.1.2",
         "pg": "^8.20.0",
         "resend": "^3.2.0",
-        "sqlite3": "^6.0.1"
+        "@sendgrid/mail": "^8.1.0"
     }
 }

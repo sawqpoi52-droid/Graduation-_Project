@@ -4,6 +4,7 @@ import ThemeToggle from './components/ThemeToggle';
 import EmailForm from './components/EmailForm';
 import SecurityTips from './components/SecurityTips';
 import PasswordAdvice from './components/PasswordAdvice';
+import ExposureRemovalAssistant from './components/ExposureRemovalAssistant';
 
 import { checkPassword } from './utils/passwordCheck';
 import { UI_TRANSLATIONS } from './utils/translations';
@@ -19,6 +20,21 @@ function App() {
     const [lang, setLang] = useState('ar');
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [leaksCount, setLeaksCount] = useState(0);
+    const [featureFlags, setFeatureFlags] = useState({});
+
+    useEffect(() => {
+        const fetchFeatureFlags = async () => {
+            try {
+                const res = await axios.get('/api/feature-flags');
+                if (res.data) {
+                    setFeatureFlags(res.data);
+                }
+            } catch (e) {
+                console.error('Failed to fetch feature flags', e);
+            }
+        };
+        fetchFeatureFlags();
+    }, []);
 
     useEffect(() => {
         const fetchCount = async () => {
@@ -53,7 +69,7 @@ function App() {
         try {
             if (type === 'email') {
                 const response = await axios.get(`/api/check?email=${inputValue}`);
-                setResult(response.data);
+                setResult({ ...response.data, checkedEmail: inputValue });
             } else {
                 const count = await checkPassword(inputValue);
                 setResult({
@@ -98,6 +114,11 @@ function App() {
 
                 {/* Security Tips (only when breached) */}
                 {!isSafe && <SecurityTips t={t} />}
+
+                {/* Exposure Removal Assistant (only when breached) */}
+                {!isSafe && (featureFlags.exposureAssistant ?? true) && (
+                    <ExposureRemovalAssistant email={result.checkedEmail} t={t} lang={lang} />
+                )}
             </>
         );
     };
