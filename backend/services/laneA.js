@@ -21,12 +21,24 @@ async function planA1PatchFile({ occurrenceId, repoFullName, filePath, branch = 
     // 1. Fetch file content and SHA
     let fileData;
     if (isMock) {
-        fileData = {
-            sha: 'mock_sha_' + crypto.randomBytes(8).toString('hex'),
-            size: 512,
-            encoding: 'base64',
-            content: Buffer.from(`// Configuration\nconst maintainer_email = "${targetEmail || 'maintainer@example.com'}";\nmodule.exports = { maintainer_email };\n`, 'utf8').toString('base64')
-        };
+        const localPath = path.resolve(__dirname, '..', '..', filePath);
+        if (fs.existsSync(localPath)) {
+            const diskContent = fs.readFileSync(localPath, 'utf8');
+            fileData = {
+                sha: 'mock_sha_' + crypto.randomBytes(8).toString('hex'),
+                size: Buffer.byteLength(diskContent, 'utf8'),
+                encoding: 'base64',
+                content: Buffer.from(diskContent, 'utf8').toString('base64'),
+                localPath
+            };
+        } else {
+            fileData = {
+                sha: 'mock_sha_' + crypto.randomBytes(8).toString('hex'),
+                size: 512,
+                encoding: 'base64',
+                content: Buffer.from(`// Configuration\nconst maintainer_email = "${targetEmail || 'maintainer@example.com'}";\nmodule.exports = { maintainer_email };\n`, 'utf8').toString('base64')
+            };
+        }
     } else {
         try {
             const res = await client.get(`/repos/${repoFullName}/contents/${encodeURIComponent(filePath)}?ref=${branch}`);
@@ -120,6 +132,12 @@ async function executeA1PatchFile({ planId, consentConfirmed, token, actorId = '
 
     if (isMock) {
         commitSha = 'mock_commit_' + crypto.randomBytes(10).toString('hex');
+        const localPath = path.resolve(__dirname, '..', '..', plan.filePath);
+        if (fs.existsSync(localPath)) {
+            const patched = Buffer.from(plan.patchedContentBase64, 'base64').toString('utf8');
+            fs.writeFileSync(localPath, patched, 'utf8');
+            console.log(`[Lane A1] Physically patched real local file on disk: ${localPath}`);
+        }
     } else {
         try {
             // Attempt direct commit to default branch
