@@ -69,6 +69,23 @@ async function fetchBreaches(email) {
             IsSensitive: false
         }];
     }
+
+    // Also check if exposures exist for this email
+    try {
+        const { hashEmailHMAC } = require('./utils/emailSecurity');
+        const hmacHash = hashEmailHMAC(plainEmail);
+        const expCheck = await db.query('SELECT COUNT(*) as count FROM occurrences o JOIN exposures e ON o.exposure_id = e.exposure_id JOIN user_emails ue ON e.user_email_id = ue.id WHERE ue.email_hash = $1 OR ue.email_hash = $2 OR ue.email_hash = $3', [emailHash, hmacHash, plainEmail]);
+        if (expCheck.rows && parseInt(expCheck.rows[0].count) > 0) {
+            return [{
+                Name: "GitHub_Public_Exposure",
+                Title: "GitHub Public Repository Exposure",
+                BreachDate: new Date().toISOString().split('T')[0],
+                DataClasses: ["Email addresses", "Source Code", "Commit Metadata"],
+                IsSensitive: true
+            }];
+        }
+    } catch (_) {}
+
     return [];
 }
 
