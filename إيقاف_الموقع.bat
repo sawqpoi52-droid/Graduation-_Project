@@ -1,9 +1,6 @@
 @echo off
-echo Stopping SecureCheck...
-
-:: Kill node.exe which runs the backend server
-taskkill /F /IM node.exe /T
-
-echo Server stopped successfully.
-timeout /t 3
+echo Stopping SecureCheck Server...
+taskkill /F /IM node.exe /T 2>nul
+echo Server stopped.
+timeout /t 2 /nobreak >nul
 exit
