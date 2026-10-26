@@ -440,6 +440,27 @@ app.use(helmet({
     }
 }));
 
+// Lightweight cookie parsing middleware
+app.use((req, res, next) => {
+    const cookieHeader = req.headers.cookie;
+    req.cookies = {};
+    if (cookieHeader) {
+        cookieHeader.split(';').forEach(cookie => {
+            const parts = cookie.split('=');
+            if (parts.length >= 2) {
+                req.cookies[parts[0].trim()] = decodeURIComponent((parts.slice(1).join('=') || '').trim());
+            }
+        });
+    }
+    next();
+});
+
+// Mount Remediation & OAuth Routes
+const authRouter = require('./routes/auth');
+const remediationRouter = require('./routes/remediation');
+app.use('/api/auth', authRouter);
+app.use('/api', remediationRouter);
+
 // 1.1 Permissions Policy
 app.use((req, res, next) => {
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
@@ -1332,6 +1353,8 @@ async function initDatabase() {
             console.log('[Init] Seeded "Free" subscription plan with Unlimited limits.');
         }
 
+        const { runMigrations } = require('./database/migration');
+        await runMigrations();
         console.log('[Init] PostgreSQL Database ready.');
     } catch (err) {
         console.error('[Init] PostgreSQL initialization failed:', err.message);

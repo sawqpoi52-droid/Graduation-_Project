@@ -1,0 +1,1274 @@
+SecureCheck
+
+Kingdom of Saudi Arabia
+
+Ministry of Education
+
+Majmaah University
+
+College of Science Al Zulfi 
+
+Department of Computer Science and Information 
+
+المملكة العربية السعودية
+
+وزارة التعليم العالي 
+
+جامعة المجمعة
+
+كلية العلوم بالزلفي
+
+قسم علوم الحاسب والمعلومات
+
+
+
+Data Breach Detection & Alert System
+
+Bachelor of Information Technology — Final Project Report
+
+
+
+
+
+Submitted by:
+
+Sulaiman Al-Khunaini  —  441101336
+
+
+
+
+
+Malik Al-Khunaini  —  442104490
+
+
+
+
+
+Adeeb Al-Khunaini  —  451102446
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Supervised by: Dr. Badr Al-Duraimeeh
+
+
+
+Table of Contents
+
+Table of Contents	2
+
+Acknowledgements	5
+
+Chapter One: Introduction	6
+
+1.1 Problem Definition	6
+
+1.2 Goals & Objectives	6
+
+1.3 Scope	6
+
+1.4 Critical Success Factors	7
+
+Chapter Two: Literature Review	8
+
+2.1 Overview of the Breach Landscape	8
+
+2.2 Existing Tools and Their Limitations	8
+
+2.3 Privacy-Preserving Techniques	8
+
+2.4 Relevant Standards and Regulations	8
+
+Chapter Three: System Analysis & Specification	9
+
+3.1 System Overview	9
+
+3.2 Data Modeling	9
+
+3.2.1 Entity Relationship Diagram (ERD) — Figure 1	9
+
+3.2.2 Use Case Diagram — Figure 2	10
+
+3.2.3 Sequence Diagram: Check Email Breach — Figure 3	11
+
+3.2.4 Sequence Diagram: Send Report Now — Figure 4	12
+
+3.2.5 Database Model Diagram — Figure 5	13
+
+Chapter Four: System Design	14
+
+4.1 Functions & Operations	14
+
+User-Facing Functions	14
+
+Scheduler Operations (node-cron)	14
+
+OSINT Crawler Operations (every 24 hours)	14
+
+Core Backend Functions	14
+
+4.2 Database Tables & Attributes	15
+
+users	15
+
+subscriptions	15
+
+scan_sessions	15
+
+local_breaches	16
+
+system_audit_log	16
+
+4.3 Security Design	16
+
+Chapter Five: Implementation & Interface	17
+
+5.1 Technology Stack	17
+
+5.2 System Interface Walkthrough	17
+
+Figure 6: SecureCheck Homepage — Arabic Interface (Hero Section)	18
+
+Figure 7: Security Notifications Floating Button (Arabic)	18
+
+Figure 8: Subscribe to Security Reports Modal — Arabic	19
+
+Figure 9: SecureCheck Homepage — English Interface (Hero Section)	20
+
+Figure 10: Security Notifications Floating Button (English)	20
+
+Figure 11: Subscribe to Security Reports Modal — English	21
+
+Chapter Six: Testing & Evaluation	22
+
+6.1 Testing Strategy Overview	22
+
+6.2 Functional Testing	22
+
+6.3 Security Testing	23
+
+Chapter Seven: Design Evaluation & Discussion	24
+
+Chapter Eight: Future Work	25
+
+Database Migration to PostgreSQL	25
+
+Push Notification Support	25
+
+Expanded Check Types	25
+
+Personal Breach History Dashboard	25
+
+Two-Factor Authentication for Sensitive Operations	25
+
+Additional Language Support	25
+
+Expanded Crawler Sources	25
+
+Chapter Nine: Conclusion	26
+
+References	27
+
+Data Breach & Security Research	27
+
+Privacy & Cryptography Standards	27
+
+Web Security Guidelines	27
+
+Database & System Design	27
+
+Frameworks & Libraries	27
+
+Additional References	28
+
+
+
+Table of figure
+
+3.2.2 Use Case Diagram — Figure 2	10
+
+3.2.3 Sequence Diagram: Check Email Breach — Figure 3	11
+
+3.2.4 Sequence Diagram: Send Report Now — Figure 4	12
+
+3.2.5 Database Model Diagram — Figure 5	13
+
+Figure 6: SecureCheck Homepage — Arabic Interface (Hero Section)	18
+
+Figure 7: Security Notifications Floating Button (Arabic)	18
+
+Figure 8: Subscribe to Security Reports Modal — Arabic	19
+
+Figure 9: SecureCheck Homepage — English Interface (Hero Section)	20
+
+Figure 10: Security Notifications Floating Button (English)	20
+
+Figure 11: Subscribe to Security Reports Modal — English	21
+
+
+
+
+
+Abstract
+
+Data breaches have become a critical concern for everyday digital users. Millions of credentials are exposed annually through corporate leaks and targeted attacks, yet the majority of affected users are never directly notified — leaving them vulnerable to credential stuffing and account takeovers (Verizon, 2023).
+
+SecureCheck is a privacy-first web platform enabling users to check whether their email address has appeared in any known data breach. The system uses an independently built local breach database populated by an OSINT Web Crawler that continuously indexes publicly available data from GitHub and Reddit. Results are presented as a binary outcome — breach detected or no breach detected — providing users with a clear, actionable answer without dependence on any external API.
+
+Beyond one-time checks, SecureCheck provides automated email alert subscriptions (daily, weekly, or monthly) with bilingual PDF reports in Arabic and English. The system is built on React.js and Node.js/Express.js, with data stored in a normalized SQLite database. Security measures include AES-256 encryption for subscriber data (NIST, 2001), SHA-256-based anonymous identifiers, a System Audit Log, and a Privacy Purge mechanism compliant with GDPR Article 17 (European Parliament, 2016).
+
+
+
+Acknowledgements
+
+We express our sincere gratitude to our supervisor, Dr. Badr Al-Duraimeeh, for his consistent guidance throughout the project — particularly during the security architecture and database design phases. We also acknowledge the open-source communities behind React.js, Express.js, Tailwind CSS, SQLite, pdfmake-rtl, nodemailer, and node-cron for the foundational tools this project depends upon.
+
+
+
+Chapter One: Introduction
+
+The frequency and scale of data breaches have increased at a pace that was almost unimaginable just ten years ago. According to the Identity Theft Resource Center (2022), the number of publicly reported data breaches in the United States alone reached a record high of 1,862 in 2021 — a 68% increase over the previous record. Globally, the IBM Cost of a Data Breach Report (2023) estimates the average cost of a single breach at USD 4.45 million. For everyday users, the impact is more immediate: exposed passwords, hijacked accounts, identity theft, and financial fraud.
+
+Despite the scale of the problem, most affected users are never directly informed when their credentials have been compromised. This gap is actively exploited through credential stuffing, where automated tools systematically attempt leaked username-password pairs against popular websites (OWASP, 2021). SecureCheck was designed specifically to address this gap.
+
+1.1 Problem Definition
+
+The core problems SecureCheck addresses:
+
+• Most breach victims have no ongoing notification mechanism; they learn about exposure through news or by accident (Verizon DBIR, 2023).
+
+• Credential-stuffing attacks succeed at high rates because of widespread password reuse (OWASP, 2021).
+
+• Existing tools offer one-time checks but no automated ongoing monitoring or alerts for newly added breaches.
+
+• No existing tool provides Arabic language support, excluding a significant regional user base.
+
+• Existing breach checking tools depend entirely on third-party external APIs, creating a single point of failure and raising data sovereignty concerns.
+
+1.2 Goals & Objectives
+
+• Email breach checking against a locally maintained breach database built by the system's own OSINT crawler.
+
+• Binary result: breach detected or no breach detected — clear and actionable for all users.
+
+• Automated subscription system for daily, weekly, or monthly breach alerts.
+
+• Full bilingual Arabic (RTL) / English (LTR) interface and PDF report generation.
+
+• Normalized SQLite database with audit logging and cascade deletion.
+
+• AES-256 encryption (NIST, 2001) for subscriber email addresses at rest.
+
+• Privacy Purge on unsubscription, aligned with GDPR Article 17 (European Parliament, 2016).
+
+• Smart Comparison to prevent redundant report dispatches.
+
+• OWASP-aligned security: rate limiting, CORS, Helmet.js, input sanitization (OWASP, 2021).
+
+1.3 Scope
+
+The scope of this project covers the complete design and planned implementation of SecureCheck across both its frontend and backend components. In scope: a fully functional web application for checking email addresses against the local breach database; a subscription management system for automated breach monitoring with configurable notification frequencies; bilingual PDF report generation in Arabic and English with proper RTL support; a fully responsive bilingual interface with RTL/LTR switching and dark mode; a secure Node.js backend with rate limiting, input sanitization, security headers, and CORS enforcement; a normalized SQLite relational database with foreign key enforcement, audit logging, and Privacy Purge support; and an OSINT Web Crawler that autonomously indexes publicly available breach data from GitHub and Reddit every 24 hours.
+
+The following are explicitly out of scope for this version: raw email addresses are not stored (only AES-256 encrypted versions); no breach checking by phone number, username, or other identifiers; no push notifications; and all stored data is permanently removed upon unsubscription with no archiving.
+
+1.4 Critical Success Factors
+
+• OSINT Crawler availability — the breach detection service depends on the crawler's ability to reach GitHub and Reddit. Crawler downtime reduces the freshness of the local breach database.
+
+• Reliable SMTP email delivery via nodemailer — both the welcome email and all scheduled reports depend on correct SMTP configuration.
+
+• Correct cron scheduling — misconfigured cron expressions could result in missed or duplicated reports (Alcântara, 2019).
+
+• A usable bilingual interface — RTL and LTR modes must function correctly across all major modern browsers in both text rendering and PDF output.
+
+• A secure and consistent database architecture with proper encryption, referential integrity, audit trails, and cascade deletion that reliably removes all records upon unsubscription.
+
+
+
+Chapter Two: Literature Review
+
+2.1 Overview of the Breach Landscape
+
+The volume of data breaches and the number of exposed credentials have grown at a remarkable pace over the last decade. The 2023 Verizon Data Breach Investigations Report (DBIR) analyzed over 16,312 security incidents and confirmed that credential theft remains the single most common method by which attackers gain initial access. According to the same report, over 80% of hacking-related breaches involve the use of stolen or weak passwords. The IBM Cost of a Data Breach Report (2023) estimates an average total cost per breach of USD 4.45 million.
+
+2.2 Existing Tools and Their Limitations
+
+The most prominent existing tool for breach checking is Have I Been Pwned (HIBP), created by Troy Hunt in 2013. HIBP provides a clean interface for one-time email checks and is widely used by security professionals. However, it has notable limitations that directly shaped SecureCheck's design: it does not provide automated ongoing monitoring with active alerts; it provides no Arabic language support; and it operates as an external API dependency. Other tools such as Firefox Monitor (Mozilla, 2019) and Google Password Checkup (Google, 2019) offer some degree of automated alerting but are bundled within larger ecosystems and neither provides Arabic language support nor downloadable bilingual reports.
+
+SecureCheck differentiates itself by maintaining a fully independent local breach database populated by its own OSINT crawler, eliminating the external API dependency entirely.
+
+2.3 Privacy-Preserving Techniques
+
+A central technical challenge in breach checking tools is the handling of sensitive user data. SecureCheck addresses this through two complementary techniques. For the local breach database, email addresses collected by the OSINT crawler are immediately converted to SHA-256 hashes before storage — a one-way cryptographic function ensuring the original email address cannot be recovered. For subscriber email addresses at rest, AES-256 encryption was selected (NIST, 2001), allowing decryption when needed for report delivery. The encryption key is stored separately from the database.
+
+2.4 Relevant Standards and Regulations
+
+SecureCheck's security features directly address OWASP Top Ten entries (OWASP, 2021), implemented through Helmet.js headers, rate limiting, CORS policy, and input sanitization. GDPR Article 17 right-to-erasure (European Parliament, 2016) informed the Privacy Purge design, using CASCADE SQL deletion to fulfill erasure requirements. NIST Special Publication 800-92 (2006) guided the System Audit Log design.
+
+
+
+Chapter Three: System Analysis & Specification
+
+3.1 System Overview
+
+SecureCheck follows a standard three-tier client-server architecture. The React.js frontend communicates with a Node.js/Express.js backend through a RESTful API. The backend handles all business logic (breach detection, report generation) and reads/writes to a SQLite relational database. The local breach database is populated by an independently running OSINT Web Crawler that queries GitHub and Reddit every 24 hours, extracts email addresses using regular expression patterns, converts them to SHA-256 hashes, and stores unique entries in the local_breaches table.
+
+Technology stack: React.js 18 + Tailwind CSS 3 + Vite 5 (frontend); Node.js 20 + Express.js 4 (backend); SQLite 3 (database); nodemailer 6 (email); pdfmake-rtl (PDF); node-cron 3 (scheduling).
+
+3.2 Data Modeling
+
+3.2.1 Entity Relationship Diagram (ERD) — Figure 1
+
+The ERD was developed using a table-based notation. Six core entities were identified through analysis of the planned system functionality and the data requirements of the backend API endpoints. The USER entity is the central anchor of the data model. It connects directly to SUBSCRIPTION (monitoring preferences), SCAN_SESSION (individual breach check events), and REPORT (generated and delivered reports). The LOCAL_BREACH entity is entirely independent of the USER — it is populated by the OSINT crawler and queried by SCAN_SESSION during the breach-checking process. The SYSTEM_AUDIT_LOG entity is intentionally decoupled from all other entities, ensuring audit records persist even after all user data is purged through the Privacy Purge operation.
+
+The ERD below uses crow's foot notation to represent the cardinality between entities. Key relationships include: one USER can have one-to-many SCAN_SESSIONs (a user may check their email multiple times); one USER can have zero-to-many SUBSCRIPTIONs; and each SCAN_SESSION may trigger zero-to-many CHECKS against LOCAL_BREACH records. The SYSTEM_AUDIT_LOG stands alone with no foreign key connections, preserving its integrity even when user data is fully purged.
+
+
+
+Figure 1: Entity Relationship Diagram (ERD) — SecureCheck Data Model
+
+3.2.2 Use Case Diagram — Figure 2
+
+The use case diagram maps all significant system interactions following UML 2.5 conventions (OMG, 2017). Three actors are defined: the User (a human interacting through the web interface), the Scheduler (the automated cron process running on the server), and the OSINT Crawler (the automated process that indexes public sources and populates the local breach database).
+
+The system handles eight distinct user interactions and two automated interactions. The most fundamental is Check Email Breach (UC-01), which encompasses the full pipeline: client-side validation, backend query against the local_breaches table, and rendering of the result as a binary BreachBanner component. The diagram below illustrates the use cases and their actors:
+
+• UC-01: Check Email Breach (vs Local DB) — primary user interaction.
+
+• UC-04: Subscribe to Reports (Daily / Weekly / Monthly) — extends to UC-05 and UC-06.
+
+• UC-05: Receive Instant Report (Email + PDF Attachment) — extended from UC-04.
+
+• UC-06: Update Frequency — change subscription interval.
+
+• UC-07: Unsubscribe — triggers Privacy Purge.
+
+• UC-08: View Privacy Policy.
+
+• UC-09: Switch Language (Arabic RTL / English LTR).
+
+• UC-10: Send Scheduled Reports — automated via Scheduler actor.
+
+
+
+Figure 2: Use Case Diagram — SecureCheck System (UML 2.5)
+
+3.2.3 Sequence Diagram: Check Email Breach — Figure 3
+
+The check email sequence diagram illustrates the complete interaction flow when a user submits an email address for breach checking. Four participants are shown: the User, the React.js Frontend, the Express.js Backend, and the Local Breach DB (which replaces the original HIBP external API dependency).
+
+The flow begins with the user entering their email address and clicking Check Now. Before any network call is made, the frontend performs client-side format validation (Step 2). Once validation passes, the frontend sends a GET request to /api/check?email={email} (Step 3). The backend applies a rate limiter of 20 requests/hr per IP — if exceeded, HTTP 429 is returned (Step 4). Otherwise, the backend computes SHA-256(email) and runs SELECT * FROM local_breaches WHERE email_hash = SHA256(email) (Step 5). The database returns either matching rows or an empty result (Step 6). The backend returns { breachFound: true, source, discovered_at } or { breachFound: false } (Steps 7a/7b). The frontend renders the appropriate BreachBanner. Finally, the event is logged to system_audit_log with hashed identifiers (Step 8–9).
+
+
+
+Figure 3: Sequence Diagram — Check Email Breach Flow
+
+3.2.4 Sequence Diagram: Send Report Now — Figure 4
+
+The instant report sequence diagram covers the flow when a subscribed user clicks "Receive Report Now" from the subscription modal. This is the most operationally complex flow because it involves: querying the local breach database, comparing results against the stored lastBreachCount (Smart Comparison), generating a bilingual PDF via pdfmake-rtl, and delivering the report by email via nodemailer.
+
+The flow begins when the user clicks "Receive Report Now" (Step 1), which triggers a POST to /api/send-report-now with their email and language preference (Step 2). The backend queries the local_breaches table using SHA-256(email) (Step 3) and retrieves the subscriber's stored lastBreachCount from the SQLite subscriptions table (Steps 4–6). The Smart Comparison logic compares the current count against the stored value. The backend then calls generateReportPDF(email, breaches, id, lang) (Step 7), which returns a PDF Buffer (Step 8). The PDF is dispatched via sendNotificationEmail(to, subject, html, pdf) (Step 9). The backend updates lastBreachCount in SQLite DB (Step 10) and returns a success response (Steps 11–12). The user receives the email with the PDF in their chosen language asynchronously (Step 13).
+
+
+
+Figure 4: Sequence Diagram — Instant Report Generation and Delivery
+
+3.2.5 Database Model Diagram — Figure 5
+
+The database model diagram represents the physical schema of the SecureCheck relational database. The schema was developed following Codd's relational model principles (Codd, 1970) and normalized to Third Normal Form (3NF). Five operational tables are defined: users, subscriptions, scan_sessions, reports, and system_audit_log. One new table is added in this design: local_breaches, which stores SHA-256 hashes of leaked email addresses alongside their source (github or reddit) and discovery timestamp.
+
+Key structural decisions visible in the diagram: (1) All foreign key relationships between users, subscriptions, scan_sessions, and reports are configured with CASCADE DELETE — this is what enables the Privacy Purge to remove all user-associated data in a single operation. (2) The system_audit_log table deliberately has NO foreign key to the users table, ensuring audit records survive the Privacy Purge intact. (3) The local_breaches table has NO relationship to users — it is populated exclusively by the OSINT crawler and queried anonymously by SHA-256 hash. (4) The 1—N annotations on the diagram lines indicate the one-to-many cardinality between users and their associated subscription, session, and report records.
+
+
+
+Figure 5: Database Model Diagram — Physical Schema (SQLite, 3NF)
+
+
+
+Chapter Four: System Design
+
+4.1 Functions & Operations
+
+User-Facing Functions
+
+• Email Breach Check: SHA-256 hash of email queried against local_breaches table; binary BreachBanner result rendered.
+
+• Subscribe / Instant Report / Update Frequency / Unsubscribe (triggers Privacy Purge).
+
+• Language Toggle (Arabic RTL ↔ English LTR) and Dark Mode Toggle.
+
+Scheduler Operations (node-cron)
+
+• Daily: 23:59 every day [cron: '59 23 * * *']
+
+• Weekly: 23:59 every Thursday [cron: '59 23 * * 4']
+
+• Monthly: 07:00 on the 1st [cron: '0 7 1 * *']
+
+• Smart Comparison: report dispatched based on current breach match count vs stored lastBreachCount; sent with 'no new breaches' notice when unchanged.
+
+OSINT Crawler Operations (every 24 hours)
+
+• Query GitHub and Reddit public APIs for posts and commits containing exposed credential data.
+
+• Extract email addresses from raw content using regular expression patterns.
+
+• Convert each extracted email to SHA-256 hash.
+
+• Check if hash already exists in local_breaches (deduplication).
+
+• If new: INSERT into local_breaches with source and discovered_at timestamp.
+
+• UNIQUE constraint on email_hash column prevents duplicate entries at the database level.
+
+Core Backend Functions
+
+• checkBreach(email): Computes SHA-256(email), queries local_breaches, returns { breachFound: boolean, count: number }.
+
+• generateReportPDF(email, breachData, id, lang): Builds bilingual PDF with full Arabic RTL layout via pdfmake-rtl.
+
+• sendNotificationEmail(to, subject, html, attachments): SMTP delivery via nodemailer with optional PDF attachment.
+
+• encryptEmail(email): AES-256 encryption before database write (NIST, 2001).
+
+• logAuditEvent(action, emailHash, ipHash, metadata): Writes hashed record to system_audit_log (NIST SP 800-92, 2006).
+
+• privacyPurge(email): CASCADE DELETE across all user-associated tables (European Parliament, 2016).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4.2 Database Tables & Attributes
+
+users
+
+Attribute
+
+Type
+
+Constraint
+
+Description
+
+email
+
+VARCHAR(255)
+
+Primary Key
+
+Main identifier (AES-256 encrypted at rest)
+
+anonymous_id
+
+CHAR(64)
+
+Unique, NOT NULL
+
+SHA-256(email+salt) — shown to user, non-reversible
+
+lang
+
+VARCHAR(5)
+
+NOT NULL
+
+"ar" or "en"
+
+created_at
+
+TIMESTAMP
+
+NOT NULL
+
+Account creation timestamp
+
+last_breach_count
+
+INT
+
+DEFAULT 0
+
+Smart Comparison reference
+
+is_active
+
+BOOLEAN
+
+DEFAULT TRUE
+
+Active subscription flag
+
+
+
+subscriptions
+
+Attribute
+
+Type
+
+Constraint
+
+Description
+
+sub_id
+
+CHAR(64)
+
+Primary Key
+
+SHA-256 anonymous subscription ID
+
+email
+
+VARCHAR(255)
+
+FK → users
+
+AES-256 encrypted (NIST, 2001)
+
+frequency
+
+ENUM
+
+NOT NULL
+
+"daily", "weekly", or "monthly"
+
+status
+
+ENUM
+
+DEFAULT "active"
+
+"active" or "inactive"
+
+lang
+
+VARCHAR(5)
+
+NOT NULL
+
+"ar" or "en"
+
+last_breach_count
+
+INT
+
+DEFAULT 0
+
+Smart Comparison before each report
+
+
+
+scan_sessions
+
+Attribute
+
+Type
+
+Constraint
+
+Description
+
+check_id
+
+UUID
+
+Primary Key
+
+Unique scan identifier
+
+user_id
+
+UUID
+
+FK → users
+
+User who initiated scan
+
+check_type
+
+ENUM
+
+NOT NULL
+
+"manual" or "scheduled"
+
+breach_found ★
+
+BOOLEAN
+
+NOT NULL
+
+TRUE if breach detected (replaces risk_level)
+
+breach_count
+
+INT
+
+DEFAULT 0
+
+Number of matching hashes found
+
+checked_at
+
+TIMESTAMP
+
+NOT NULL
+
+Exact scan timestamp
+
+ip_hash
+
+CHAR(64)
+
+NULLABLE
+
+SHA-256 hashed IP for rate-limit auditing
+
+
+
+
+
+
+
+
+
+local_breaches 
+
+Attribute
+
+Type
+
+Constraint
+
+Description
+
+email_hash
+
+CHAR(64)
+
+PK, UNIQUE
+
+SHA-256 hash of leaked email — never plain text
+
+source
+
+VARCHAR(20)
+
+NOT NULL
+
+"github" or "reddit"
+
+discovered_at
+
+TIMESTAMP
+
+NOT NULL
+
+When the crawler first discovered this hash
+
+
+
+system_audit_log
+
+Attribute
+
+Type
+
+Constraint
+
+Description
+
+log_id
+
+UUID
+
+Primary Key
+
+Unique log entry ID
+
+action_type
+
+ENUM
+
+NOT NULL
+
+"scan", "report", "delete", "export"
+
+target_table
+
+VARCHAR(100)
+
+NULLABLE
+
+Database table affected
+
+ip_hash
+
+CHAR(64)
+
+NULLABLE
+
+SHA-256 of requesting IP
+
+metadata
+
+JSON
+
+NULLABLE
+
+Context: frequency, lang
+
+created_at
+
+TIMESTAMP
+
+NOT NULL
+
+Precise action timestamp
+
+
+
+
+
+4.3 Security Design
+
+Security is built into the architecture from the ground up, applying multiple layers of defense aligned with OWASP Top Ten guidelines (OWASP, 2021) and NIST standards (NIST, 2001):
+
+• AES-256 encryption for all subscriber email addresses stored in the database — the encryption key is stored separately from the database file (NIST, 2001).
+
+• SHA-256 hashing for the local_breaches table — no plaintext email is ever stored in the breach database. SHA-256 hashing is also applied to IP addresses in the audit log for anonymization.
+
+• Rate limiting at 20 requests/hr per IP on all sensitive endpoints — requests exceeding this limit receive HTTP 429 Too Many Requests.
+
+• CORS policy enforcement — only whitelisted origins may call the API. Requests from unauthorized origins are blocked at the middleware layer.
+
+• Helmet.js security headers — X-XSS-Protection, X-Frame-Options, Content-Security-Policy, and other OWASP-recommended headers are applied to every response.
+
+• Input sanitization on all user-submitted fields — SQL injection and XSS payloads are sanitized before any processing.
+
+• Privacy Purge on unsubscription — CASCADE DELETE removes all user-associated records across all linked tables, fully satisfying GDPR Article 17 right-to-erasure (European Parliament, 2016).
+
+• System Audit Log — all significant actions are logged with hashed identifiers, following NIST SP 800-92 (2006) log management guidelines.
+
+
+
+Chapter Five: Implementation & Interface
+
+5.1 Technology Stack
+
+Layer
+
+Technology
+
+Version
+
+Role
+
+Frontend
+
+React.js
+
+18.x
+
+Component-based UI with bilingual RTL/LTR support and dark mode
+
+Frontend
+
+Tailwind CSS
+
+3.x
+
+Utility-first CSS with built-in RTL direction utilities and dark mode support
+
+Frontend
+
+Vite
+
+5.x
+
+Fast hot module replacement; optimized production builds
+
+Backend
+
+Node.js
+
+20.x
+
+Non-blocking I/O ideal for API-heavy workloads (OpenJS Foundation, 2009)
+
+Backend
+
+Express.js
+
+4.x
+
+Lightweight REST framework with large middleware ecosystem
+
+Backend
+
+Helmet.js
+
+7.x
+
+HTTP security headers — OWASP-recommended (OWASP, 2021)
+
+Database
+
+SQLite
+
+3.x
+
+Zero-config, ACID-compliant embedded SQL for single-server deployment
+
+Email
+
+nodemailer
+
+6.x
+
+SMTP delivery supporting Gmail and Office365
+
+Scheduler
+
+node-cron
+
+3.x
+
+Cron-based task scheduling for reports and crawler (Alcântara, 2019)
+
+PDF
+
+pdfmake-rtl
+
+latest
+
+PDF generation with full Arabic RTL layout support
+
+
+
+5.2 System Interface Walkthrough
+
+This section provides a detailed walkthrough of the SecureCheck user interface, covering each major screen and interaction point. The interface was designed for three key goals: clarity and simplicity for non-technical users, full bilingual support with proper RTL rendering for Arabic, and a dark-themed visual style that conveys professionalism and security. All screenshots below were captured from the live running application.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Figure 6: SecureCheck Homepage — Arabic Interface (Hero Section)
+
+The Arabic homepage (shown below) presents the main landing experience of SecureCheck in Arabic mode. The headline "هل بياناتك آمنة؟" (Is your data secure?) is displayed in large bold typography against a dark navy background (#0D1B2A). The word "آمنة" (secure) is styled in gradient blue-purple to draw the eye. Below the headline, a descriptive subtitle explains the tool's purpose in plain Arabic. Two tab options — "البريد الإلكتروني" (Email Address) and "كلمة المرور" (Password) — allow the user to switch check type. The email input field accepts an address, and the "فحص الآن" (Check Now) button is rendered full-width in bright blue (#4169E1). The RTL layout is fully correct throughout: text is right-aligned, and all interface elements are mirrored from the LTR version. The dark mode toggle (sun icon) and language switcher ("English") are positioned in the top-left, following RTL navigation conventions.
+
+
+
+Figure 6: SecureCheck Homepage — Arabic Interface (RTL Mode)
+
+
+
+
+
+
+
+Figure 7: Security Notifications Floating Button (Arabic)
+
+Figure 7 shows the floating action button (FAB) used to open the subscription modal in Arabic mode. The button reads "إشعارات الأمان" (Security Notifications) and features a bell icon with a red notification badge indicator. The button's positioning follows the principle of progressive disclosure — the subscription feature is accessible and visible, but does not visually compete with the primary email check interface. The red dot on the bell icon subtly communicates that the user has not yet subscribed to alerts, creating a natural call-to-action without aggressive prompting.
+
+
+
+Figure 7: Security Notifications FAB — Arabic Mode
+
+
+
+
+
+
+
+Figure 8: Subscribe to Security Reports Modal — Arabic
+
+Figure 8 shows the subscription modal in Arabic mode, triggered by clicking the Security Notifications FAB. The modal provides a focused, distraction-free subscription experience with a bell icon at the top as a visual anchor. The heading "اشترك في تقارير الأمان" (Subscribe to Security Reports) is followed by a clear subtitle explaining that reports are delivered periodically without storing sensitive data. The email input field is labeled "البريد الإلكتروني" (Email Address). Below it, the "نوع التقرير الدوري" (Periodic Report Type) selector presents three toggle options: "تقرير يومي" (Daily Report), "تقرير أسبوعي" (Weekly Report — selected by default in blue), and "تقرير شهري" (Monthly Report). The primary "اشترك الآن" (Subscribe Now) button is rendered full-width in blue. Two secondary actions appear below: "استلم التقرير الآن (تجربة)" (Receive Report Now — Trial) in blue link style, and "إلغاء الاشتراك" (Unsubscribe) in grey. The Trial option allows users to receive an immediate sample report before committing to ongoing monitoring.
+
+
+
+Figure 8: Subscribe to Security Reports Modal — Arabic Version
+
+
+
+
+
+
+
+
+
+Figure 9: SecureCheck Homepage — English Interface (Hero Section)
+
+Figure 9 shows the English-language version of the homepage, demonstrating the full LTR layout. The headline "Is your data secure?" uses the same visual hierarchy as the Arabic version, with "secure?" rendered in the same blue-purple gradient. The tab selector shows "Email Address" and "Password" options. The input placeholder reads "example@email.com" and the action button reads "Check Now". Comparing this figure with Figure 6 demonstrates the bilingual interface symmetry — the layout mirrors from RTL to LTR while maintaining identical structural hierarchy and visual weight across both modes. The language switcher now reads "العربية" (Arabic) and is positioned in the top-right corner, following LTR navigation conventions. The dark mode toggle (sun icon) is also positioned in the top-right. This symmetry was deliberately engineered through the React.js component architecture with directional prop passing.
+
+
+
+Figure 9: SecureCheck Homepage — English Interface (LTR Mode)
+
+Figure 10: Security Notifications Floating Button (English)
+
+Figure 10 shows the English version of the Security Notifications floating action button. The button reads "SECURITY NOTIFICATIONS" in uppercase with the same bell icon and red notification badge as the Arabic version (Figure 7). The consistent visual treatment across both language modes ensures users switching languages can immediately locate the subscription entry point without relearning the interface. The uppercase label in the English version follows standard English button convention while the Arabic version uses sentence case, reflecting correct typographic norms for each language.
+
+
+
+Figure 10: Security Notifications FAB — English Mode
+
+
+
+
+
+
+
+Figure 11: Subscribe to Security Reports Modal — English
+
+Figure 11 shows the subscription modal in English mode. The structure is identical to the Arabic version (Figure 8), demonstrating the consistent component architecture. The heading reads "Subscribe to Security Reports" and the subtitle explains the service without sensitive data storage. The email input is labeled "Email Address" and the frequency selector shows "Daily Report", "Weekly Report" (selected in blue), and "Monthly Report" buttons. The primary action reads "Subscribe" and the secondary actions are "Receive Report Now (Test)" and "Unsubscribe". The LTR layout is applied correctly throughout — all text, labels, and interactive elements follow left-to-right reading direction, contrasting with the mirrored RTL layout of Figure 8. This demonstrates the full bilingual symmetry of the interface.
+
+
+
+Figure 11: Subscribe to Security Reports Modal — English Version
+
+
+
+Chapter Six: Testing & Evaluation
+
+6.1 Testing Strategy Overview
+
+The testing strategy covers two dimensions: functional correctness and security robustness. The methodology follows the OWASP Web Security Testing Guide v4.2 (OWASP Foundation, 2022) for security and standard black-box functional testing for functionality. Test cases were derived from the use case diagram (Figure 2) and sequence diagrams (Figures 3–4), ensuring coverage of every documented interaction flow with both positive and negative test cases.
+
+6.2 Functional Testing
+
+Test Case
+
+Input
+
+Expected Result
+
+Email with known breaches
+
+A confirmed leaked email address
+
+BreachBanner shown red: "Breach Detected"; source and date displayed
+
+Email with no breaches
+
+An email not in local_breaches
+
+BreachBanner shown green: "No Breach Detected"
+
+Invalid email format
+
+"notanemail" (no @)
+
+Client-side validation error; no API call made
+
+Subscribe — new email
+
+New email + weekly frequency
+
+Success; email stored encrypted; anonymous ID returned
+
+Subscribe — duplicate
+
+Existing email + same frequency
+
+HTTP 400: "Already subscribed" error
+
+Subscribe — frequency update
+
+Existing email + different frequency
+
+Subscription record updated; success returned
+
+Unsubscribe — existing
+
+A confirmed subscribed email
+
+Privacy Purge triggered; all records deleted; success shown
+
+Unsubscribe — not found
+
+Email not in subscriptions
+
+HTTP 400: "No subscription found" error
+
+Instant report trigger
+
+A subscribed email address
+
+Report email received with HTML body and PDF attachment
+
+Smart Comparison — no change
+
+Email with unchanged breach count
+
+Report sent with "no new breaches" notice
+
+Language toggle
+
+Click AR/EN toggle
+
+UI switches between RTL and LTR correctly
+
+Audit log verification
+
+Any check or subscription action
+
+Entry in system_audit_log with hashed email, IP, and timestamp
+
+
+
+
+
+
+
+
+
+
+
+
+
+6.3 Security Testing
+
+Security Test
+
+Method
+
+Expected Behavior
+
+Rate limiting
+
+Send 21+ requests to /api/check within 60 minutes from same IP
+
+Request #21 → HTTP 429; earlier requests succeed
+
+AES-256 encryption
+
+Inspect DB record directly after subscribing
+
+Email field contains ciphertext, not plaintext (NIST, 2001)
+
+SHA-256 breach storage
+
+Inspect local_breaches table directly
+
+Only hashes stored — no plaintext email addresses
+
+SQL injection resistance
+
+Submit SQL payloads in email field (e.g. ' OR 1=1--)
+
+Input sanitized; no query execution; HTTP 400
+
+XSS injection resistance
+
+Submit <script> tags in input fields
+
+Input escaped; no script execution in browser
+
+CORS policy
+
+Call API from unauthorized external origin
+
+Request blocked with CORS error
+
+HTTP security headers
+
+Inspect response headers in DevTools
+
+Helmet.js headers present: X-XSS-Protection, X-Frame-Options, CSP
+
+Privacy Purge completeness
+
+Unsubscribe; then query all database tables directly
+
+Zero records found across all tables for that email
+
+Audit log integrity
+
+Subscribe then inspect system_audit_log directly
+
+Correct action type, hashed email, hashed IP, precise timestamp
+
+
+
+
+
+Chapter Seven: Design Evaluation & Discussion
+
+The design and implementation planning phase of SecureCheck has produced a system architecture that addresses each of the key gaps identified in the problem statement. The most significant outcome of this project is the combination of genuinely private breach checking with automated ongoing monitoring in a single system that supports both Arabic and English users — and does so without depending on any external API.
+
+No existing tool provides all three of these capabilities together. Have I Been Pwned (Hunt, 2013) provides excellent one-time checking but no monitoring and requires an external API dependency. Firefox Monitor (Mozilla, 2019) provides monitoring but only within the Firefox ecosystem and only in English. Google Password Checkup (Google, 2019) is similarly ecosystem-bound. SecureCheck closes this gap with a standalone, open, bilingual package that any user with an internet connection can access regardless of which browser or platform they use.
+
+The OSINT Web Crawler is the most technically novel component of this design. By crawling GitHub and Reddit — both of which expose public APIs and contain significant volumes of inadvertently leaked credential data — the system builds and continuously updates its own breach dataset without relying on any third party. The SHA-256 hashing of all collected email addresses before storage ensures that the breach database itself never contains personally identifiable information, maintaining strong privacy guarantees at the data collection layer.
+
+The security architecture is the part of the design that went through the most significant iteration. The initial prototype stored subscription data in a flat JSON file and did not implement encryption on email addresses. Both of these decisions were reversed during the design phase. The move to a normalized SQLite relational database with AES-256 encryption of subscriber email addresses represents a substantial improvement in the system's security posture.
+
+The bilingual interface introduced some unexpected design challenges, particularly around PDF report generation. Standard PDF libraries do not natively support Arabic RTL text. The pdfmake-rtl library specifically addresses this issue and was selected after evaluating several alternatives. The Smart Comparison mechanism addresses notification fatigue: if the system sent a scheduled report at every interval regardless of change, users who had been breach-free for months would receive repetitive all-clear emails. By comparing the current breach match count against the stored lastBreachCount, the system provides more meaningful notifications.
+
+Known limitations: (1) Crawler coverage — the local breach database is limited to data discoverable through GitHub and Reddit public APIs. More comprehensive breach databases maintained by dedicated security organizations will have broader coverage. (2) SQLite single-writer constraint — well-suited for single-server deployments but may become a bottleneck if the system scales to handle many concurrent subscription update requests. Both are known and manageable limitations, not architectural flaws.
+
+
+
+Chapter Eight: Future Work
+
+Database Migration to PostgreSQL
+
+As discussed in Chapter Seven, SQLite's single-writer constraint could become a performance issue as the system scales. PostgreSQL would provide better concurrency handling, more advanced full-text search capabilities, and stronger typing. A migration path is architecturally straightforward because the schema was designed with standard SQL.
+
+Push Notification Support
+
+The current alert system is email-only. Adding Web Push notification support using the Push API and Service Workers would complement the existing email system and give users a faster way to learn about new breaches.
+
+Expanded Check Types
+
+The current version checks email addresses only. Expanding breach checking to cover phone numbers and usernames would provide more comprehensive monitoring, depending on the availability of such data in the public sources indexed by the crawler.
+
+Personal Breach History Dashboard
+
+Subscribed users currently receive their breach status through email reports but have no persistent in-system view of their history. Adding a personal breach history dashboard — accessible via a unique link using the anonymous_id — would allow users to review historical scan results and see how their exposure status has changed over time.
+
+Two-Factor Authentication for Sensitive Operations
+
+Currently, subscription management relies on email ownership as the only implicit authentication mechanism. Adding an email-based one-time code confirmation step for unsubscription and frequency changes would provide stronger assurance that only the actual email owner can modify or delete their subscription.
+
+Additional Language Support
+
+The bilingual Arabic/English architecture uses a language field throughout the system. Adding support for additional languages such as French or Urdu would require extending the database messages and updating the PDF generation logic for each new language.
+
+Expanded Crawler Sources
+
+The current OSINT crawler targets GitHub and Reddit. Future versions could expand to additional public sources such as Pastebin archives, public Telegram channels, or other platforms where leaked credential data is known to appear. A data aggregation layer could merge results from multiple sources while de-duplicating overlapping records.
+
+
+
+Chapter Nine: Conclusion
+
+This report has documented the complete design plan for SecureCheck — a breach detection and alerting system built with user privacy as the primary design constraint from the outset. The project began with a clear and concrete problem: the vast majority of people whose credentials have been exposed in data breaches have no easy way of knowing this, no ongoing monitoring to inform them of future incidents, and no tool that speaks to them in Arabic or is independent of commercial third-party services.
+
+The solution addresses each of these gaps systematically. Email checking against a locally maintained breach database gives users immediate access to breach information without any external API dependency. The binary result — breach detected or no breach detected — is clear and actionable for users of any technical background. The automated subscription system with Smart Comparison provides ongoing monitoring without notification fatigue. And the full bilingual Arabic and English support with proper RTL rendering and Arabic PDF generation makes the system accessible to a regional audience that existing tools have largely ignored.
+
+The OSINT Web Crawler is the core innovation of this design. By building and maintaining an independent breach dataset from publicly available data on GitHub and Reddit, the system demonstrates that a student-built project can achieve meaningful security utility without relying on third-party services. All collected data is stored as SHA-256 hashes — the original email addresses are never retained — ensuring that the breach database itself is privacy-preserving by design.
+
+From a technical perspective, the design evolved significantly from the initial prototype. The replacement of flat JSON file storage with a normalized SQLite relational database was a fundamental change that enabled the entire privacy architecture — the CASCADE DELETE for Privacy Purge, the foreign key constraints for referential integrity, and the audit logging design. The implementation of AES-256 encryption for subscriber email addresses and SHA-256 anonymization for identifiers brings the system to a level of security appropriate for a tool handling personal data.
+
+The limitations of the current design are acknowledged and managed: the crawler's coverage is currently limited to GitHub and Reddit, and the SQLite single-writer constraint will eventually need to be resolved if the system scales. The future work items identified in Chapter Eight — particularly the PostgreSQL migration and expanded crawler sources — represent a natural and achievable evolution path. Overall, SecureCheck represents a technically solid, privacy-respecting, and genuinely useful approach to a real-world security problem.
+
+
+
+References
+
+Data Breach & Security Research
+
+• [1] IBM Security. (2023). Cost of a data breach report 2023. IBM Corporation.
+
+• [2] Verizon. (2023). 2023 Data breach investigations report (DBIR). Verizon Business.
+
+• [3] Identity Theft Resource Center. (2022). 2021 Annual data breach report. ITRC.
+
+• [4] Bhagavatula, C., Bauer, L., & Cranor, L. F. (2020). The impact of targeted breach notifications on password-change behavior. USENIX SOUPS 2020.
+
+• [5] Hunt, T. (2013). Have I Been Pwned. https://haveibeenpwned.com
+
+Privacy & Cryptography Standards
+
+• [6] NIST. (2001). FIPS PUB 197: Advanced Encryption Standard (AES). https://doi.org/10.6028/NIST.FIPS.197
+
+• [7] NIST. (2015). FIPS PUB 180-4: Secure Hash Standard (SHS). https://doi.org/10.6028/NIST.FIPS.180-4
+
+• [8] NIST SP 800-92. (2006). Guide to computer security log management. https://doi.org/10.6028/NIST.SP.800-92
+
+• [9] European Parliament. (2016). Regulation (EU) 2016/679 — GDPR, Article 17. https://eur-lex.europa.eu/eli/reg/2016/679/oj
+
+Web Security Guidelines
+
+• [10] OWASP Foundation. (2021). OWASP Top Ten. https://owasp.org/Top10
+
+• [11] OWASP Foundation. (2022). OWASP Testing Guide v4.2. https://owasp.org/www-project-web-security-testing-guide
+
+Database & System Design
+
+• [12] Codd, E. F. (1970). A relational model of data for large shared data banks. Communications of the ACM, 13(6), 377–387.
+
+• [13] Elmasri, R., & Navathe, S. B. (2015). Fundamentals of database systems (7th ed.). Pearson.
+
+• [14] SQLite Consortium. (2024). SQLite documentation. https://www.sqlite.org
+
+• [15] OMG. (2017). Unified Modeling Language specification, version 2.5.1. https://www.omg.org/spec/UML/2.5.1
+
+Frameworks & Libraries
+
+• [16] Meta. (2013). React. https://react.dev
+
+• [17] OpenJS Foundation. (2009). Node.js. https://nodejs.org
+
+• [18] Express.js. (2024). Express framework. https://expressjs.com
+
+• [19] Alcântara, L. (2019). node-cron. https://www.npmjs.com/package/node-cron
+
+• [20] Nodemailer. (2024). Nodemailer. https://nodemailer.com
+
+• [21] pdfmake Contributors. (2024). pdfmake-rtl. https://www.npmjs.com/package/pdfmake-rtl
+
+
+
+
+
+Additional References
+
+• [22] Mozilla Foundation. (2019). Firefox Monitor. https://monitor.firefox.com
+
+• [23] Google LLC. (2019). Google Password Checkup. https://passwords.google.com/checkup
+
+• [24] Acquisti, A., Brandimarte, L., & Loewenstein, G. (2015). Privacy and human behavior in the age of information. Science, 347(6221), 509–514.
+

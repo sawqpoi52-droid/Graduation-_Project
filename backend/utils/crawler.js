@@ -1,390 +1,438 @@
-const cron = require('node-cron');
 const axios = require('axios');
-const crypto = require('crypto');
 const db = require('../database/db');
-
-// Configuration
-const TARGET_LEAKED_EMAILS = 10000;
-
-// Top active open source repositories with public contributor activity
-const REPO_SOURCES = [
-    'torvalds/linux',
-    'facebook/react',
-    'nodejs/node',
-    'golang/go',
-    'python/cpython',
-    'rust-lang/rust',
-    'microsoft/vscode',
-    'angular/angular',
-    'vuejs/core',
-    'twbs/bootstrap',
-    'flutter/flutter',
-    'django/django',
-    'kubernetes/kubernetes',
-    'moby/moby',
-    'vercel/next.js',
-    'laravel/laravel',
-    'ansible/ansible',
-    'expressjs/express',
-    'tensorflow/tensorflow',
-    'bitcoin/bitcoin'
-];
-
-// Security search keywords for issue/commit intelligence
-const SECURITY_TOPICS = [
-    'security leak',
-    'credential leak',
-    'data breach email',
-    'vulnerability report',
-    'security advisory contact'
-];
-
-// Regex for finding valid emails in text
-const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-
-// Excluded patterns (bot accounts, noreply, system domains)
-const EXCLUDED_PATTERNS = [
-    'noreply', 'no-reply', 'github.com', 'users.noreply', 
-    'localhost', 'example.com', 'test.com', 'w3.org', 'domain.com'
-];
+const { calculateLineNumber, maskEvidence, buildPermalink, hashEmailHMAC, maskEmail } = require('./emailSecurity');
+const { classifyOccurrence } = require('../services/classifier');
+const { createGithubClient } = require('./githubClient');
 
 /**
- * Check current leaked email count
+ * Discovers exposures for a specific, cryptographically verified user email.
+ * Strictly prevents free-form unverified scanning.
+ * Verifies every candidate against real content before saving to DB.
  */
-async function getLeakedCount() {
-    try {
-        const result = await db.query('SELECT COUNT(*) as count FROM leaked_emails');
-        return parseInt(result.rows[0].count) || 0;
-    } catch (e) {
-        return 0;
+async function scanVerifiedEmail({ email, userEmailId, token, userId = null }) {
+    if (!email || typeof email !== 'string') {
+        throw new Error('Valid email required for discovery scan');
     }
-}
 
-/**
- * Fetch contributor emails directly from public GitHub repositories
- * Highly reliable: Does not require authentication and has higher rate limits than search API.
- */
-async function fetchRepoCommitEmails(repo) {
-    const exposures = [];
+    const normEmail = email.trim().toLowerCase();
+    const client = createGithubClient(token);
+    const discoveredOccurrences = [];
+
+    console.log(`[Discovery] Initiating verified scan for: ${normEmail.replace(/^(.).*@/, '$1***@')}`);
+
+    // Fetch user login to determine repo permissions and authorship
+    let currentUserLogin = null;
+    if (token) {
+        try {
+            const userRes = await client.get('/user');
+            currentUserLogin = userRes.data?.login || null;
+        } catch (_) {}
+    }
+
+    // 1. DISCOVERY: Search Commits (Author and Committer)
     try {
-        const page = Math.floor(Math.random() * 25) + 1;
-        const url = `https://api.github.com/repos/${repo}/commits?per_page=30&page=${page}`;
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            },
-            timeout: 7000
+        const commitQueries = [
+            `author-email:${normEmail}`,
+            `committer-email:${normEmail}`
+        ];
+
+        for (const q of commitQueries) {
+            try {
+                const res = await client.get(`/search/commits?q=${encodeURIComponent(q)}&sort=author-date&order=desc&per_page=15`, {
+                    headers: { 'Accept': 'application/vnd.github.cloak-preview+json' }
+                });
+
+                if (res.data?.items && Array.isArray(res.data.items)) {
+                    for (const item of res.data.items) {
+                        const repoFullName = item.repository?.full_name;
+                        const sha = item.sha;
+                        if (!repoFullName || !sha) continue;
+
+                        // Double check candidate by fetching commit content
+                        try {
+                            const commitDetail = await client.get(`/repos/${repoFullName}/commits/${sha}`);
+                            const authorEmail = commitDetail.data?.commit?.author?.email?.toLowerCase();
+                            const committerEmail = commitDetail.data?.commit?.committer?.email?.toLowerCase();
+
+                            if (authorEmail === normEmail || committerEmail === normEmail) {
+                                const commitMsg = commitDetail.data?.commit?.message || '';
+                                const permalink = `https://github.com/${repoFullName}/commit/${sha}`;
+
+                                discoveredOccurrences.push({
+                                    type: 'COMMIT_METADATA',
+                                    repo_full_name: repoFullName,
+                                    default_branch: item.repository?.default_branch || 'main',
+                                    commit_sha: sha,
+                                    file_path: null,
+                                    line_number: null,
+                                    comment_id: null,
+                                    html_url: item.html_url || permalink,
+                                    permalink,
+                                    evidence_masked: maskEvidence(commitMsg.split('\n')[0].substring(0, 200), normEmail),
+                                    detected_via: 'search/commits',
+                                    itemAuthorLogin: commitDetail.data?.author?.login || commitDetail.data?.committer?.login || null
+                                });
+                            }
+                        } catch (_) {
+                            // Candidate fetch failed or inaccessible
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn(`[Discovery] Search commits (${q}) note:`, err.message);
+            }
+        }
+    } catch (e) {
+        console.warn('[Discovery] Commit search error:', e.message);
+    }
+
+    // 2. DISCOVERY: Search Code (File Contents)
+    try {
+        const codeRes = await client.get(`/search/code?q="${encodeURIComponent(normEmail)}"&per_page=15`);
+        if (codeRes.data?.items && Array.isArray(codeRes.data.items)) {
+            for (const item of codeRes.data.items) {
+                const repoFullName = item.repository?.full_name;
+                const path = item.path;
+                const sha = item.sha;
+                if (!repoFullName || !path) continue;
+
+                // Verify file content via Contents API & calculate literal line number
+                try {
+                    const contentRes = await client.get(`/repos/${repoFullName}/contents/${encodeURIComponent(path)}`);
+                    if (contentRes.data?.content && contentRes.data?.encoding === 'base64') {
+                        const rawText = Buffer.from(contentRes.data.content, 'base64').toString('utf8');
+                        const line = calculateLineNumber(rawText, normEmail);
+
+                        if (line > 0) {
+                            const lines = rawText.split(/\r?\n/);
+                            const matchedLineText = lines[line - 1] || '';
+                            const permalink = buildPermalink(repoFullName, sha || 'main', path, line);
+
+                            discoveredOccurrences.push({
+                                type: 'FILE_CONTENT',
+                                repo_full_name: repoFullName,
+                                default_branch: item.repository?.default_branch || 'main',
+                                commit_sha: sha || null,
+                                file_path: path,
+                                line_number: line,
+                                comment_id: null,
+                                html_url: item.html_url || permalink,
+                                permalink,
+                                evidence_masked: maskEvidence(matchedLineText.trim().substring(0, 250), normEmail),
+                                detected_via: 'search/code',
+                                itemAuthorLogin: null
+                            });
+                        }
+                    }
+                } catch (_) {
+                    // Ignored if candidate doesn't match or cannot be fetched
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[Discovery] Code search note:', e.message);
+    }
+
+    // 3. DISCOVERY: Search Comments (Issues & PRs)
+    try {
+        const issuesRes = await client.get(`/search/issues?q="${encodeURIComponent(normEmail)}" in:comments&per_page=15`);
+        if (issuesRes.data?.items && Array.isArray(issuesRes.data.items)) {
+            for (const item of issuesRes.data.items) {
+                const repoFullName = item.repository_url ? item.repository_url.replace('https://api.github.com/repos/', '') : null;
+                const issueNumber = item.number;
+                if (!repoFullName || !issueNumber) continue;
+
+                try {
+                    const commentsRes = await client.get(`/repos/${repoFullName}/issues/${issueNumber}/comments?per_page=50`);
+                    if (Array.isArray(commentsRes.data)) {
+                        for (const comment of commentsRes.data) {
+                            const body = comment.body || '';
+                            if (body.toLowerCase().includes(normEmail)) {
+                                discoveredOccurrences.push({
+                                    type: 'ISSUE_COMMENT',
+                                    repo_full_name: repoFullName,
+                                    default_branch: 'main',
+                                    commit_sha: null,
+                                    file_path: null,
+                                    line_number: null,
+                                    comment_id: String(comment.id),
+                                    html_url: comment.html_url,
+                                    permalink: comment.html_url,
+                                    evidence_masked: maskEvidence(body.substring(0, 250), normEmail),
+                                    detected_via: 'search/issues/comments',
+                                    itemAuthorLogin: comment.user?.login || null
+                                });
+                            }
+                        }
+                    }
+                } catch (_) {}
+            }
+        }
+    } catch (e) {
+        console.warn('[Discovery] Comments search note:', e.message);
+    }
+
+    // 4. DISCOVERY: Hacker News Algolia Search (Discovery only - Lane C)
+    try {
+        const hnRes = await axios.get(`https://hn.algolia.com/api/v1/search?query="${encodeURIComponent(normEmail)}"&hitsPerPage=15`, {
+            timeout: 6000
         });
 
-        if (Array.isArray(response.data)) {
-            response.data.forEach(item => {
-                const commitUrl = item.html_url || `https://github.com/${repo}/commit/${item.sha}`;
-                const contentOwner = item.author?.login || item.commit?.author?.name || null;
-
-                if (item.commit?.author?.email) {
-                    exposures.push({
-                        email: item.commit.author.email,
-                        source_type: 'github_commit',
-                        source_url: commitUrl,
-                        source_context: item.commit?.message ? item.commit.message.split('\n')[0].substring(0, 200) : null,
-                        content_owner: contentOwner,
+        if (hnRes.data?.hits && Array.isArray(hnRes.data.hits)) {
+            for (const hit of hnRes.data.hits) {
+                const rawHit = JSON.stringify(hit).toLowerCase();
+                if (rawHit.includes(normEmail)) {
+                    const permalink = `https://news.ycombinator.com/item?id=${hit.objectID}`;
+                    discoveredOccurrences.push({
+                        type: 'HN_ITEM',
+                        repo_full_name: null,
+                        default_branch: null,
+                        commit_sha: null,
                         file_path: null,
-                        repo_name: repo
+                        line_number: null,
+                        comment_id: String(hit.objectID),
+                        html_url: permalink,
+                        permalink,
+                        evidence_masked: maskEvidence((hit.comment_text || hit.story_text || hit.title || '').substring(0, 250), normEmail),
+                        detected_via: 'hn_algolia',
+                        itemAuthorLogin: hit.author || null
                     });
                 }
-                if (item.commit?.committer?.email && item.commit.committer.email !== item.commit?.author?.email) {
-                    exposures.push({
-                        email: item.commit.committer.email,
-                        source_type: 'github_commit',
-                        source_url: commitUrl,
-                        source_context: item.commit?.message ? item.commit.message.split('\n')[0].substring(0, 200) : null,
-                        content_owner: item.committer?.login || item.commit?.committer?.name || contentOwner,
-                        file_path: null,
-                        repo_name: repo
-                    });
-                }
-            });
-        }
-    } catch (error) {
-        // Silently handle if individual repo fails
-    }
-    return exposures;
-}
-
-/**
- * Fetch public emails from Hacker News Algolia security discussions
- */
-async function fetchHackerNewsEmails() {
-    const exposures = [];
-    try {
-        const topic = SECURITY_TOPICS[Math.floor(Math.random() * SECURITY_TOPICS.length)];
-        const url = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(topic)}&hitsPerPage=30`;
-        const response = await axios.get(url, { timeout: 6000 });
-        if (response.data && response.data.hits) {
-            response.data.hits.forEach(hit => {
-                const rawHit = JSON.stringify(hit);
-                const matches = rawHit.match(emailRegex);
-                if (matches && matches.length > 0) {
-                    const isComment = hit.story_title !== undefined || hit._tags?.includes('comment');
-                    const sourceType = isComment ? 'hackernews_comment' : 'hackernews_post';
-                    const sourceUrl = `https://news.ycombinator.com/item?id=${hit.objectID}`;
-                    const sourceContext = hit.story_title || hit.title || null;
-                    const contentOwner = hit.author || null;
-
-                    matches.forEach(email => {
-                        exposures.push({
-                            email,
-                            source_type: sourceType,
-                            source_url: sourceUrl,
-                            source_context: sourceContext,
-                            content_owner: contentOwner,
-                            file_path: null,
-                            repo_name: null
-                        });
-                    });
-                }
-            });
+            }
         }
     } catch (e) {
-        // Silently handle
+        console.warn('[Discovery] Hacker News search note:', e.message);
     }
-    return exposures;
+
+    // 5. Deduplicate and Save to Database
+    let savedCount = 0;
+    for (const occ of discoveredOccurrences) {
+        // Check if repository permissions can be queried for classification
+        let repoPermissions = {};
+        if (occ.repo_full_name && token) {
+            try {
+                const repoInfo = await client.get(`/repos/${occ.repo_full_name}`);
+                repoPermissions = repoInfo.data?.permissions || {};
+            } catch (_) {}
+        }
+
+        // Compute viewer relation
+        let viewerRelation = 'none';
+        if (repoPermissions.admin) viewerRelation = 'owner';
+        else if (repoPermissions.push) viewerRelation = 'writer';
+        else if (currentUserLogin && occ.itemAuthorLogin && currentUserLogin.toLowerCase() === occ.itemAuthorLogin.toLowerCase()) {
+            viewerRelation = 'comment_author';
+        }
+
+        const classification = classifyOccurrence({
+            type: occ.type,
+            repoFullName: occ.repo_full_name,
+            viewerRelation,
+            repoPermissions,
+            currentUserLogin,
+            itemAuthorLogin: occ.itemAuthorLogin
+        });
+
+        // 6. Insert Exposure
+        const isHn = occ.type === 'HN_ITEM';
+        const source = isHn ? 'hn' : 'github';
+        
+        // Avoid duplicate insertion for identical permalink
+        const dupCheck = await db.query(
+            'SELECT occurrence_id FROM occurrences WHERE permalink = $1',
+            [occ.permalink]
+        );
+
+        if (!dupCheck.rows || dupCheck.rows.length === 0) {
+            const expIns = await db.query(`
+                INSERT INTO exposures (user_email_id, source, data_origin, status, status_reason, lane)
+                VALUES ($1, $2, 'live', 'Detected', 'Verified live crawler discovery', $3)
+            `, [userEmailId || null, source, classification.lane]);
+
+            const exposureId = expIns.lastID || (await db.query('SELECT MAX(exposure_id) as id FROM exposures')).rows[0].id;
+
+            await db.query(`
+                INSERT INTO occurrences (
+                    exposure_id, type, repo_full_name, default_branch, commit_sha,
+                    file_path, line_number, comment_id, html_url, permalink,
+                    evidence_masked, viewer_relation, detected_via
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            `, [
+                exposureId,
+                occ.type,
+                occ.repo_full_name,
+                occ.default_branch,
+                occ.commit_sha,
+                occ.file_path,
+                occ.line_number,
+                occ.comment_id,
+                occ.html_url,
+                occ.permalink,
+                occ.evidence_masked,
+                viewerRelation,
+                occ.detected_via
+            ]);
+
+            savedCount++;
+        }
+    }
+
+    console.log(`[Discovery] Scan complete. Found: ${discoveredOccurrences.length} occurrences | New saved: ${savedCount}`);
+    return {
+        scannedEmail: normEmail,
+        totalFound: discoveredOccurrences.length,
+        newSaved: savedCount
+    };
 }
 
 /**
- * High-entropy OSINT credential batch generator for continuous breach simulation.
- * Ensures the crawler always yields fresh discoveries even during network disruptions.
+ * Seeds controlled test data tagged explicitly with data_origin='seeded_test'.
+ * Used for automated verification tests and demo evaluation.
  */
-function generateOSINTBatch(count = 15) {
-    const firstNames = ['omar', 'khalid', 'fahad', 'nasser', 'sultan', 'yousef', 'tariq', 'ahmed', 'saud', 'abdullah', 'faisal', 'salem', 'hamad', 'ziad', 'rakan'];
-    const lastNames = ['qahtani', 'otb', 'dossary', 'shammari', 'harbi', 'ghamdi', 'zahrani', 'mutairi', 'subaie', 'anazi', 'shehri', 'omari'];
-    const domains = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me', 'icloud.com', 'sec-corp.net', 'company-mail.org'];
-    const verifiedSources = [
-        { repo: 'torvalds/linux', url: 'https://github.com/torvalds/linux/commit/c03c1a14507dfaf8b856c2608f9ac216021fc222', type: 'github_commit' },
-        { repo: 'expressjs/express', url: 'https://github.com/expressjs/express/commit/de5fb62b1ac8d02efcb7931ef12936cb0a954307', type: 'github_commit' },
-        { repo: 'nodejs/node', url: 'https://github.com/nodejs/node/commit/1a885caa6e7f5fb0372ba774c021335b7389dda9', type: 'github_commit' },
-        { repo: 'facebook/react', url: 'https://github.com/facebook/react/blob/main/packages/react-dom/src/client/ReactDOMRoot.js', type: 'github_file' }
-    ];
-    const verifiedHnUrls = [
-        'https://news.ycombinator.com/item?id=39120485',
-        'https://news.ycombinator.com/item?id=37863766',
-        'https://news.ycombinator.com/item?id=36305631'
-    ];
+async function seedTestDataForEmail({ email, userEmailId, repoFullName = 'test-org/securecheck-test' }) {
+    console.log(`[Discovery] Seeding controlled test data for: ${email}`);
+    const normEmail = email.trim().toLowerCase();
 
-    const batch = [];
-    for (let i = 0; i < count; i++) {
-        const first = firstNames[Math.floor(Math.random() * firstNames.length)];
-        const last = lastNames[Math.floor(Math.random() * lastNames.length)];
-        const num = Math.floor(Math.random() * 899) + 100;
-        const domain = domains[Math.floor(Math.random() * domains.length)];
-        const email = `${first}.${last}${num}@${domain}`;
-
-        const isGh = Math.random() > 0.4;
-        if (isGh) {
-            const vSource = verifiedSources[Math.floor(Math.random() * verifiedSources.length)];
-            batch.push({
-                email,
-                source_type: vSource.type,
-                source_url: vSource.url,
-                source_context: 'Public contributor activity and commit author exposure',
-                content_owner: `${first}_${last}`,
-                file_path: vSource.type === 'github_file' ? 'packages/react-dom/src/client/ReactDOMRoot.js' : 'Makefile',
-                repo_name: vSource.repo
-            });
+    if (!userEmailId && email) {
+        const emailHash = hashEmailHMAC(normEmail);
+        const masked = maskEmail(normEmail);
+        const existingEmail = await db.query('SELECT id FROM user_emails WHERE email_hash = $1', [emailHash]);
+        if (existingEmail.rows && existingEmail.rows.length > 0) {
+            userEmailId = existingEmail.rows[0].id;
         } else {
-            const hnUrl = verifiedHnUrls[Math.floor(Math.random() * verifiedHnUrls.length)];
-            batch.push({
-                email,
-                source_type: 'hackernews_comment',
-                source_url: hnUrl,
-                source_context: 'Discussion on security breach investigation & leaks',
-                content_owner: `${first}_sec`,
-                file_path: null,
-                repo_name: null
-            });
+            const insEmail = await db.query(`
+                INSERT INTO user_emails (user_id, email_hash, email_masked, verified_at)
+                VALUES ('dev_developer', $1, $2, CURRENT_TIMESTAMP)
+            `, [emailHash, masked]);
+            userEmailId = insEmail.lastID || (await db.query('SELECT MAX(id) as id FROM user_emails')).rows[0].id;
         }
     }
-    return batch;
-}
 
-/**
- * Filter out invalid or bot emails
- */
-function filterEmails(items) {
-    return items.filter(item => {
-        const email = typeof item === 'string' ? item : item?.email;
-        if (!email || typeof email !== 'string') return false;
-        const lower = email.toLowerCase().trim();
-        if (EXCLUDED_PATTERNS.some(p => lower.includes(p))) return false;
-        if (!/\.[a-z]{2,}$/i.test(lower)) return false;
-        if (lower.length < 6 || lower.length > 90) return false;
-        return true;
-    });
-}
+    const realRepo = 'sawqpoi52-droid/Graduation-_Project';
+    const realCommit = 'bc96d363d8c2d5cfb9a178e7d343a9816c8a4c08';
 
-/**
- * Store emails and exposure locations in database - returns count of new entries
- * Accepts array of objects: { email, source_type, source_url, source_context, content_owner, file_path, repo_name }
- * Also supports array of plain email strings for backwards compatibility.
- */
-async function storeEmails(entries) {
-    let newCount = 0;
-    if (!Array.isArray(entries) || entries.length === 0) return 0;
-
-    // Normalize entries to objects
-    const normalized = entries.map(item => {
-        if (typeof item === 'string') {
-            return {
-                email: item.toLowerCase().trim(),
-                source_type: 'osint_crawler',
-                source_url: null,
-                source_context: null,
-                content_owner: null,
-                file_path: null,
-                repo_name: null
-            };
+    const sampleRecords = [
+        {
+            type: 'FILE_CONTENT',
+            repo: realRepo,
+            file_path: 'package.json',
+            line: 4,
+            sha: realCommit,
+            html_url: `https://github.com/${realRepo}/blob/main/package.json#L4`,
+            permalink: `https://github.com/${realRepo}/blob/main/package.json#L4`,
+            evidence_masked: `"author": "sawqpoi52-droid <${maskEmail(normEmail)}>"`,
+            lane: 'A',
+            viewer_relation: 'owner'
+        },
+        {
+            type: 'COMMIT_METADATA',
+            repo: realRepo,
+            file_path: null,
+            line: null,
+            sha: realCommit,
+            html_url: `https://github.com/${realRepo}/commit/${realCommit}`,
+            permalink: `https://github.com/${realRepo}/commit/${realCommit}`,
+            evidence_masked: `Commit author: sawqpoi52-droid <${maskEmail(normEmail)}>`,
+            lane: 'A',
+            viewer_relation: 'owner'
+        },
+        {
+            type: 'ISSUE_COMMENT',
+            repo: realRepo,
+            file_path: null,
+            line: null,
+            sha: null,
+            comment_id: '192837465',
+            html_url: `https://github.com/${realRepo}/issues`,
+            permalink: `https://github.com/${realRepo}/issues`,
+            evidence_masked: `Comment on Issue #1: "You can contact me at ${maskEmail(normEmail)}"`,
+            lane: 'A',
+            viewer_relation: 'comment_author'
+        },
+        {
+            type: 'FILE_CONTENT',
+            repo: 'octocat/Hello-World',
+            file_path: 'README',
+            line: 1,
+            sha: '7fd1a60b01f91b314f59955a4e4d4e80d8edf11d',
+            html_url: 'https://github.com/octocat/Hello-World/blob/master/README#L1',
+            permalink: 'https://github.com/octocat/Hello-World/blob/master/README#L1',
+            evidence_masked: `Contact contributor: ${maskEmail(normEmail)}`,
+            lane: 'B',
+            viewer_relation: 'none'
+        },
+        {
+            type: 'HN_ITEM',
+            repo: null,
+            file_path: null,
+            line: null,
+            sha: null,
+            comment_id: '39120485',
+            html_url: 'https://news.ycombinator.com/item?id=39120485',
+            permalink: 'https://news.ycombinator.com/item?id=39120485',
+            evidence_masked: `Discussion thread on security leaks: ${maskEmail(normEmail)}`,
+            lane: 'C',
+            viewer_relation: 'none'
         }
-        return {
-            ...item,
-            email: item.email ? item.email.toLowerCase().trim() : ''
-        };
-    }).filter(e => e.email);
+    ];
 
-    for (const item of normalized) {
-        try {
-            const plainEmail = item.email;
-            const emailHash = crypto.createHash('sha256').update(plainEmail).digest('hex');
+    for (const rec of sampleRecords) {
+        const isHn = rec.type === 'HN_ITEM';
+        const source = isHn ? 'hn' : 'github';
+        const permalink = rec.permalink || (isHn
+            ? `https://news.ycombinator.com/item?id=${rec.comment_id}`
+            : (rec.file_path ? buildPermalink(rec.repo, rec.sha, rec.file_path, rec.line) : `https://github.com/${rec.repo}/commit/${rec.sha}`));
+        const htmlUrl = rec.html_url || permalink;
 
-            // 1. Store in leaked_emails (check both raw email and hash for compatibility)
-            const res = await db.query(
-                db.usePostgres
-                    ? 'INSERT INTO leaked_emails (email_hash) VALUES ($1) ON CONFLICT DO NOTHING'
-                    : 'INSERT OR IGNORE INTO leaked_emails (email_hash) VALUES (?)',
-                [plainEmail]
-            );
+        const expIns = await db.query(`
+            INSERT INTO exposures (user_email_id, source, data_origin, status, status_reason, lane)
+            VALUES ($1, $2, 'seeded_test', 'Detected', 'Controlled Seeded Test Data', $3)
+        `, [userEmailId || null, source, rec.lane]);
 
-            if (res.rowCount > 0 || (res.changes && res.changes > 0)) {
-                newCount++;
-            }
+        const exposureId = expIns.lastID || (await db.query('SELECT MAX(exposure_id) as id FROM exposures')).rows[0].id;
 
-            // 2. Store in exposure_locations if metadata is available
-            if (item.source_type) {
-                await db.query(
-                    db.usePostgres
-                        ? `INSERT INTO exposure_locations 
-                            (email_hash, source_type, source_url, source_context, content_owner, file_path, repo_name) 
-                           VALUES ($1, $2, $3, $4, $5, $6, $7) 
-                           ON CONFLICT DO NOTHING`
-                        : `INSERT OR IGNORE INTO exposure_locations 
-                            (email_hash, source_type, source_url, source_context, content_owner, file_path, repo_name) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        plainEmail,
-                        item.source_type,
-                        item.source_url || null,
-                        item.source_context || null,
-                        item.content_owner || null,
-                        item.file_path || null,
-                        item.repo_name || null
-                    ]
-                );
-            }
-        } catch (error) {
-            // Already exists or duplicate
-        }
+        await db.query(`
+            INSERT INTO occurrences (
+                exposure_id, type, repo_full_name, default_branch, commit_sha,
+                file_path, line_number, comment_id, html_url, permalink,
+                evidence_masked, viewer_relation, detected_via
+            ) VALUES ($1, $2, $3, 'main', $4, $5, $6, $7, $8, $9, $10, $11, 'seeded_test')
+        `, [
+            exposureId,
+            rec.type,
+            rec.repo,
+            rec.sha,
+            rec.file_path,
+            rec.line,
+            rec.comment_id || null,
+            htmlUrl,
+            permalink,
+            rec.evidence_masked,
+            rec.viewer_relation
+        ]);
     }
-    return newCount;
+
+    console.log(`[Discovery] Seeded ${sampleRecords.length} controlled test occurrences with data_origin='seeded_test'.`);
 }
 
-/**
- * Standard crawler cycle - runs when admin triggers or scheduled
- */
+// Backward-compatible stubs for server.js legacy endpoints
+async function startOSINTCrawler() {
+    console.log('[Crawler] Legacy OSINT crawler disabled. Use verified email scanning via /api/scan.');
+}
+
 async function runCrawlerCycle() {
-    console.log('[OSINT Crawler] Initiating discovery cycle...');
-    const beforeCount = await getLeakedCount();
-    
-    let rawExposures = [];
-
-    // 1. Harvest from rotating public repository commits
-    const selectedRepos = shuffleArray([...REPO_SOURCES]).slice(0, 4);
-    for (const repo of selectedRepos) {
-        const repoExposures = await fetchRepoCommitEmails(repo);
-        rawExposures.push(...repoExposures);
-        await sleep(800);
-    }
-
-    // 2. Harvest from public security discussions
-    const hnExposures = await fetchHackerNewsEmails();
-    rawExposures.push(...hnExposures);
-
-    // 3. Guaranteed OSINT batch injection if public APIs yielded fewer than 15 new records
-    if (rawExposures.length < 15) {
-        const fallbackBatch = generateOSINTBatch(20);
-        rawExposures.push(...fallbackBatch);
-    }
-
-    // Filter, validate, and store
-    const validExposures = filterEmails(rawExposures);
-    const added = await storeEmails(validExposures);
-    const afterCount = await getLeakedCount();
-
-    console.log(`[OSINT Crawler] Cycle finished. Valid harvested: ${validExposures.length} | Added to DB: ${added} | Total now: ${afterCount}`);
-    return { added, before: beforeCount, after: afterCount };
+    console.log('[Crawler] Legacy crawler cycle skipped. Use verified email scanning.');
+    return { added: 0, before: 0, after: 0 };
 }
 
-/**
- * Intensive background crawler (runs in bursts until target)
- */
 async function runIntensiveCrawler() {
-    let currentCount = await getLeakedCount();
-    if (currentCount >= TARGET_LEAKED_EMAILS) {
-        console.log(`[OSINT Crawler] Target reached (${currentCount}/${TARGET_LEAKED_EMAILS}).`);
-        return;
-    }
-
-    console.log(`[OSINT Crawler] Intensive mode active. Current: ${currentCount}/${TARGET_LEAKED_EMAILS}`);
-    // Run an initial discovery cycle
-    await runCrawlerCycle();
-}
-
-/**
- * Utility functions
- */
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function shuffleArray(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-}
-
-/**
- * Start the OSINT Crawler scheduler
- */
-function startOSINTCrawler() {
-    console.log('[OSINT Crawler] Engine initialized.');
-    
-    // Run an initial lightweight cycle 10 seconds after server start
-    setTimeout(async () => {
-        try {
-            await runCrawlerCycle();
-        } catch(e) {
-            console.error('[OSINT Crawler] Initial cycle error:', e.message);
-        }
-
-        // Schedule normal 24h cycle
-        cron.schedule('0 3 * * *', () => {
-            runCrawlerCycle();
-        });
-        console.log('[OSINT Crawler] Scheduled 24h cron active (03:00 AM).');
-    }, 10000);
+    console.log('[Crawler] Legacy intensive crawler skipped. Use verified email scanning.');
 }
 
 module.exports = {
+    scanVerifiedEmail,
+    seedTestDataForEmail,
+    // Legacy stubs for backward compatibility with server.js
     startOSINTCrawler,
     runCrawlerCycle,
     runIntensiveCrawler
