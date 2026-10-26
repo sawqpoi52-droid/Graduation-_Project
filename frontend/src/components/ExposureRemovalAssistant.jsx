@@ -395,7 +395,6 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
                                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                                     <div className="flex flex-wrap items-center gap-2">
                                         {getLaneBadge(occ.lane, occ.occurrence_type)}
-                                        {getStatusBadge(occ.status)}
                                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                                             [{occ.occurrence_type}]
                                         </span>
@@ -493,144 +492,258 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
 
                                 {/* Lane B Direct Guidance Panel */}
                                 {isLaneB && (
-                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-4">
                                         <div className="flex items-center gap-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600 dark:text-blue-400">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                                             </svg>
-                                            <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
-                                                {isAr ? 'إرشادات معالجة التسريب في مستودع خارجي (طرف ثالث):' : 'Third-Party Repository Remediation Instructions:'}
+                                            <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                                                {isAr ? 'إرشادات تقديم طلب إزالة بيانات خاصة من GitHub (خطوة بخطوة):' : 'GitHub Private Information Removal Request (Step by Step):'}
                                             </span>
                                         </div>
+
                                         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                                            {t('laneB_notice')}
+                                            {isAr
+                                                ? 'هذا التسريب موجود في مستودع لا تملكه ولا تملك صلاحية تعديله. لإزالة بياناتك الشخصية يجب تقديم طلب رسمي لإدارة GitHub عبر نموذج إزالة البيانات الخاصة. اتبع الخطوات التالية بالترتيب:'
+                                                : 'This exposure is in a repository you do not own. To remove your personal data, submit a formal request to GitHub via their Private Information Removal form. Follow these steps:'}
                                         </p>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
-                                            {occ.repo_full_name && (
-                                                <a
-                                                    href={`https://github.com/${occ.repo_full_name}/issues/new?title=${encodeURIComponent('Privacy Concern: Exposed Contact Information')}&body=${encodeURIComponent(`Hello maintainer,\n\nI noticed that my personal contact email was exposed in this repository at file: ${occ.file_path || 'source'}.\n\nCould you please remove or redact this personal information?\n\nThank you for your cooperation.`)}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors flex items-center justify-between group"
-                                                >
-                                                    <div className="space-y-0.5">
-                                                        <div className="font-bold text-xs text-blue-600 dark:text-blue-400 group-hover:underline">
-                                                            {t('laneB_open_issue')}
-                                                        </div>
-                                                        <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
-                                                            {occ.repo_full_name}/issues/new
-                                                        </div>
-                                                    </div>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-blue-600">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                                    </svg>
-                                                </a>
-                                            )}
+
+                                        {/* Step 1 */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'افتح نموذج طلب إزالة البيانات الخاصة من GitHub:' : 'Open GitHub Private Information Removal Form:'}
+                                                </span>
+                                            </div>
                                             <a
                                                 href="https://support.github.com/contact/private-information"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors flex items-center justify-between group"
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors"
                                             >
-                                                <div className="space-y-0.5">
-                                                    <div className="font-bold text-xs text-blue-600 dark:text-blue-400 group-hover:underline">
-                                                        {t('laneB_github_dmca')}
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
-                                                        support.github.com
-                                                    </div>
-                                                </div>
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-blue-600">
+                                                <span>{isAr ? 'فتح النموذج الرسمي' : 'Open Official Form'}</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                                 </svg>
                                             </a>
                                         </div>
+
+                                        {/* Step 2 */}
                                         <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-semibold text-xs text-gray-700 dark:text-gray-300">
-                                                    {t('exposureTemplateMessage')}
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'في خانة "Your email address" اكتب بريدك الإلكتروني:' : 'In "Your email address" field, enter your email:'}
                                                 </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-900 text-xs font-mono text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                                                    {isAr ? '(أدخل بريدك الإلكتروني المسرّب هنا)' : '(Enter your leaked email here)'}
+                                                </code>
+                                            </div>
+                                        </div>
+
+                                        {/* Step 3 */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'في خانة "Whose private information is this?" اختر:' : 'In "Whose private information is this?" select:'}
+                                                </span>
+                                            </div>
+                                            <div className="px-3 py-1.5 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-900 dark:text-amber-200">
+                                                {isAr ? 'اختر: "Mine" (بياناتي الشخصية)' : 'Select: "Mine"'}
+                                            </div>
+                                        </div>
+
+                                        {/* Step 4 */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'في خانة "Describe the nature of the private information" اكتب:' : 'In "Describe the nature" field, paste:'}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-[11px] font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 p-2.5 rounded border border-gray-100 dark:border-gray-800 leading-relaxed flex-1" dir="ltr">
+                                                    {`My personal email address is exposed publicly in a repository I do not own.\nRepository: ${occ.repo_full_name || ''}\nFile path: ${occ.file_path || 'N/A'}\nLine: ${occ.line_number || 'N/A'}\nDirect link: ${occ.permalink || ''}\n\nThis constitutes a privacy risk as my personal contact information is publicly searchable. I request its immediate removal or redaction.`}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopy(`My personal email address is exposed publicly in a repository I do not own.\nRepository: ${occ.repo_full_name || ''}\nFile path: ${occ.file_path || 'N/A'}\nLine: ${occ.line_number || 'N/A'}\nDirect link: ${occ.permalink || ''}\n\nThis constitutes a privacy risk as my personal contact information is publicly searchable. I request its immediate removal or redaction.`, `gh_desc_${occId}`)}
+                                                className="px-3 py-1.5 text-xs font-bold rounded bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                                            >
+                                                {copiedKey === `gh_desc_${occId}` ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ النص' : 'Copy Text')}
+                                            </button>
+                                        </div>
+
+                                        {/* Step 5 */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'في خانة "URLs" الصق الرابط المباشر للتسريب:' : 'In "URLs" field, paste the direct exposure link:'}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-900 text-[11px] font-mono text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-gray-700 break-all flex-1" dir="ltr">
+                                                    {occ.permalink || `https://github.com/${occ.repo_full_name || ''}`}
+                                                </code>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleCopy(`Hello Maintainer (@${occ.repo_full_name ? occ.repo_full_name.split('/')[0] : 'owner'}),\n\nI noticed my personal contact email was committed in your repository (${occ.repo_full_name || ''}) at path: ${occ.file_path || ''}.\n\nAccording to GitHub privacy policies, I kindly ask you to remove or redact this email address from the file and git history.\n\nThank you for your understanding.`, `tpl_b_${occId}`)}
-                                                    className="px-2.5 py-1 text-xs font-bold rounded bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                                                    onClick={() => handleCopy(occ.permalink || `https://github.com/${occ.repo_full_name || ''}`, `gh_url_${occId}`)}
+                                                    className="px-2.5 py-1.5 text-xs font-bold rounded bg-slate-700 hover:bg-slate-600 text-white cursor-pointer flex-shrink-0"
                                                 >
-                                                    {copiedKey === `tpl_b_${occId}` ? (isAr ? 'تم النسخ!' : 'Copied!') : t('laneB_copy_msg')}
+                                                    {copiedKey === `gh_url_${occId}` ? (isAr ? 'تم!' : 'Done!') : (isAr ? 'نسخ' : 'Copy')}
                                                 </button>
                                             </div>
-                                            <p className="text-[11px] font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 p-2 rounded border border-gray-100 dark:border-gray-800 leading-normal" dir="ltr">
-                                                {`Hello Maintainer, I noticed my email was committed in repository ${occ.repo_full_name || ''} at path ${occ.file_path || ''}. Please remove or redact this personal data.`}
-                                            </p>
                                         </div>
+
+                                        {/* Step 6 */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'اضغط "Submit" لإرسال الطلب، ثم ارجع هنا واضغط الزر أدناه لتأكيد التقديم:' : 'Click "Submit", then return here and confirm:'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Alternative: Open Issue directly */}
+                                        {occ.repo_full_name && (
+                                            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
+                                                <span className="font-bold text-xs text-blue-900 dark:text-blue-200">
+                                                    {isAr ? 'بديل: يمكنك أيضاً فتح بلاغ (Issue) مباشر لمالك المستودع:' : 'Alternative: You can also open an Issue directly to the repository owner:'}
+                                                </span>
+                                                <a
+                                                    href={`https://github.com/${occ.repo_full_name}/issues/new?title=${encodeURIComponent('Privacy Concern: Exposed Contact Information')}&body=${encodeURIComponent(`Hello maintainer,\n\nI noticed that my personal contact email was exposed in this repository at file: ${occ.file_path || 'source'}.\n\nCould you please remove or redact this personal information?\n\nThank you for your cooperation.`)}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors"
+                                                >
+                                                    <span>{isAr ? 'فتح بلاغ (New Issue)' : 'Open New Issue'}</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* Hacker News Direct Guidance Panel */}
                                 {isHackerNews && (
-                                    <div className="p-4 rounded-xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/60 space-y-3">
+                                    <div className="p-4 rounded-xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/60 space-y-4">
                                         <div className="flex items-center gap-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-orange-600 dark:text-orange-400">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                                             </svg>
-                                            <span className="font-bold text-xs text-orange-950 dark:text-orange-200">
-                                                {isAr ? 'إرشادات معالجة التسريب في منصة Hacker News:' : 'Hacker News Remediation Instructions:'}
+                                            <span className="font-bold text-sm text-orange-950 dark:text-orange-200">
+                                                {isAr ? 'إرشادات طلب حذف البيانات من Hacker News (خطوة بخطوة):' : 'Hacker News Data Removal Request (Step by Step):'}
                                             </span>
                                         </div>
+
                                         <p className="text-xs text-orange-900/80 dark:text-orange-300/90 leading-relaxed">
-                                            {t('laneC_notice')}
+                                            {isAr
+                                                ? 'هذا التسريب موجود في نقاش عام على منصة Hacker News. المنصة لا توفر واجهة برمجية (API) لتعديل أو حذف المحتوى، لذلك يجب التواصل مع المشرفين مباشرة عبر البريد الإلكتروني. اتبع الخطوات التالية:'
+                                                : 'This exposure is in a public Hacker News discussion. The platform does not provide a public API for content removal, so you must contact moderators directly via email. Follow these steps:'}
                                         </p>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+
+                                        {/* Step 1: View the item */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'اطلع على المنشور/التعليق الذي يحتوي على بياناتك:' : 'View the post/comment containing your data:'}
+                                                </span>
+                                            </div>
                                             <a
                                                 href={occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 hover:border-orange-400 dark:hover:border-orange-500 transition-colors flex items-center justify-between group"
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition-colors"
                                             >
-                                                <div className="space-y-0.5">
-                                                    <div className="font-bold text-xs text-orange-600 dark:text-orange-400 group-hover:underline">
-                                                        {t('laneC_view_item')}
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
-                                                        news.ycombinator.com/item?id={occ.comment_id || 39120485}
-                                                    </div>
-                                                </div>
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-orange-600">
+                                                <span>{isAr ? 'فتح المنشور في Hacker News' : 'Open Item on Hacker News'}</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                                 </svg>
                                             </a>
-                                            <a
-                                                href={`mailto:hn@ycombinator.com?subject=${encodeURIComponent(`Personal Data Removal Request - HN Item ${occ.comment_id || ''}`)}&body=${encodeURIComponent(`Hello Hacker News Moderators,\n\nI am requesting the removal or redaction of my personal email address exposed in the following public discussion:\n${occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}\n\nThank you for your prompt assistance.`)}`}
-                                                className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 hover:border-orange-400 dark:hover:border-orange-500 transition-colors flex items-center justify-between group"
-                                            >
-                                                <div className="space-y-0.5">
-                                                    <div className="font-bold text-xs text-orange-600 dark:text-orange-400 group-hover:underline">
-                                                        {t('laneC_email_mods')}
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
-                                                        hn@ycombinator.com
-                                                    </div>
-                                                </div>
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-orange-600">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                                                </svg>
-                                            </a>
                                         </div>
+
+                                        {/* Step 2: Open email client */}
                                         <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-semibold text-xs text-gray-700 dark:text-gray-300">
-                                                    {isAr ? 'نموذج رسالة جاهز للبريد الإلكتروني:' : 'Ready Email Template:'}
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'افتح بريدك الإلكتروني وأنشئ رسالة جديدة لعنوان المشرفين:' : 'Open your email and compose a new message to moderators:'}
                                                 </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-900 text-xs font-mono font-bold text-orange-700 dark:text-orange-400 border border-gray-200 dark:border-gray-700">
+                                                    hn@ycombinator.com
+                                                </code>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleCopy(`To: hn@ycombinator.com\nSubject: Personal Data Removal Request - HN Item ${occ.comment_id || ''}\n\nHello Hacker News Moderators,\n\nI am requesting the removal or redaction of my personal email address exposed in the following public discussion:\n${occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}\n\nThank you for your assistance.`, `tpl_c_${occId}`)}
-                                                    className="px-2.5 py-1 text-xs font-bold rounded bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
+                                                    onClick={() => handleCopy('hn@ycombinator.com', `hn_email_${occId}`)}
+                                                    className="px-2.5 py-1.5 text-xs font-bold rounded bg-slate-700 hover:bg-slate-600 text-white cursor-pointer"
                                                 >
-                                                    {copiedKey === `tpl_c_${occId}` ? (isAr ? 'تم النسخ!' : 'Copied!') : t('laneC_copy_email')}
+                                                    {copiedKey === `hn_email_${occId}` ? (isAr ? 'تم!' : 'Done!') : (isAr ? 'نسخ' : 'Copy')}
                                                 </button>
                                             </div>
-                                            <p className="text-[11px] font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 p-2 rounded border border-gray-100 dark:border-gray-800 leading-normal" dir="ltr">
-                                                {`Hello Hacker News Moderators, I request removal of my email exposed in item ${occ.comment_id || 39120485}.`}
+                                        </div>
+
+                                        {/* Step 3: Subject */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'في خانة "Subject" (عنوان الرسالة) اكتب:' : 'In "Subject" field, type:'}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-900 text-[11px] font-mono text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 flex-1" dir="ltr">
+                                                    {`Personal Data Removal Request - Item ${occ.comment_id || 39120485}`}
+                                                </code>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopy(`Personal Data Removal Request - Item ${occ.comment_id || 39120485}`, `hn_subj_${occId}`)}
+                                                    className="px-2.5 py-1.5 text-xs font-bold rounded bg-slate-700 hover:bg-slate-600 text-white cursor-pointer flex-shrink-0"
+                                                >
+                                                    {copiedKey === `hn_subj_${occId}` ? (isAr ? 'تم!' : 'Done!') : (isAr ? 'نسخ' : 'Copy')}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Step 4: Body */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'في نص الرسالة (Body) الصق النص التالي:' : 'In the email body, paste the following:'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 p-2.5 rounded border border-gray-100 dark:border-gray-800 leading-relaxed whitespace-pre-wrap" dir="ltr">
+                                                {`Hello Hacker News Moderators,\n\nI am writing to request the removal or redaction of my personal email address that is publicly exposed in the following discussion:\n\n${occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}\n\nThis personal information poses a privacy and security risk. I kindly request its removal at your earliest convenience.\n\nThank you for your assistance.`}
                                             </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopy(`Hello Hacker News Moderators,\n\nI am writing to request the removal or redaction of my personal email address that is publicly exposed in the following discussion:\n\n${occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}\n\nThis personal information poses a privacy and security risk. I kindly request its removal at your earliest convenience.\n\nThank you for your assistance.`, `hn_body_${occId}`)}
+                                                className="px-3 py-1.5 text-xs font-bold rounded bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
+                                            >
+                                                {copiedKey === `hn_body_${occId}` ? (isAr ? 'تم نسخ النص!' : 'Copied!') : (isAr ? 'نسخ نص الرسالة' : 'Copy Email Body')}
+                                            </button>
+                                        </div>
+
+                                        {/* Step 5: Send */}
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+                                                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                    {isAr ? 'أرسل الرسالة، ثم ارجع هنا واضغط الزر أدناه لتأكيد التقديم:' : 'Send the email, then return here and confirm submission:'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
