@@ -138,6 +138,7 @@ async function planLaneBForkAndPR({ occurrenceId, repoFullName, filePath, branch
 
     return {
         allowed: true,
+        actionType: 'FORK_AND_PR',
         planId,
         repoFullName,
         filePath,

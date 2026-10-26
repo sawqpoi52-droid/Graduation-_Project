@@ -189,6 +189,7 @@ async function planA2HistoryRewrite({
 
         return {
             planId,
+            actionType: 'REWRITE_HISTORY',
             repoFullName,
             report: plan.report,
             warning: 'CRITICAL: Force-pushing will rewrite all commit SHAs, break open pull requests, and require collaborators to re-clone. Data will remain in existing forks and GitHub internal cache until purged.',

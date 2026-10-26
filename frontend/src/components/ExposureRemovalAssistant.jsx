@@ -140,7 +140,8 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
             });
 
             if (res.data?.plan) {
-                setActivePlan(prev => ({ ...prev, [occId]: res.data.plan }));
+                const planWithAction = { ...res.data.plan, actionType: res.data.plan.actionType || defaultAction };
+                setActivePlan(prev => ({ ...prev, [occId]: planWithAction }));
             }
         } catch (err) {
             console.error('Plan error:', err);
@@ -156,11 +157,17 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
         const plan = activePlan[occId];
         if (!plan) return;
 
+        const defaultAction = occurrence.lane === 'A'
+            ? (occurrence.occurrence_type === 'COMMIT_METADATA' ? 'REWRITE_HISTORY' : (occurrence.occurrence_type?.includes('COMMENT') ? 'DELETE_COMMENT' : 'PATCH_FILE'))
+            : (occurrence.lane === 'B' ? 'FORK_AND_PR' : 'EVIDENCE_PACKAGE');
+
+        const resolvedActionType = plan.actionType || defaultAction;
+
         setExecuting(prev => ({ ...prev, [occId]: true }));
         try {
             const res = await axios.post(`/api/exposures/${occId}/execute`, {
                 planId: plan.planId,
-                actionType: plan.actionType,
+                actionType: resolvedActionType,
                 confirmationText: confirmRepoInput[occId] || null
             });
 

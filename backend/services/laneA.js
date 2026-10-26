@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const { createGithubClient } = require('../utils/githubClient');
 const { calculateLineNumber, maskEvidence } = require('../utils/emailSecurity');
@@ -106,6 +108,7 @@ async function planA1PatchFile({ occurrenceId, repoFullName, filePath, branch = 
 
     return {
         executable: true,
+        actionType: 'PATCH_FILE',
         planId,
         filePath,
         lineNumber,

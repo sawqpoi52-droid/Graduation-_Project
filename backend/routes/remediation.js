@@ -309,10 +309,18 @@ router.post('/exposures/:id/plan', requireAuth, async (req, res) => {
  */
 router.post('/exposures/:id/execute', requireAuth, async (req, res) => {
     try {
-        const { planId, actionType, confirmationText } = req.body;
+        let { planId, actionType, confirmationText } = req.body;
 
         if (!planId) {
             return res.status(400).json({ error: 'Plan ID is required to execute action.' });
+        }
+
+        // Auto-resolve actionType from planId prefix if omitted
+        if (!actionType && planId) {
+            if (planId.startsWith('plan_a1_')) actionType = 'PATCH_FILE';
+            else if (planId.startsWith('plan_a3_')) actionType = 'DELETE_COMMENT';
+            else if (planId.startsWith('plan_a2_')) actionType = 'REWRITE_HISTORY';
+            else if (planId.startsWith('plan_b_')) actionType = 'FORK_AND_PR';
         }
 
         let executeResult;
