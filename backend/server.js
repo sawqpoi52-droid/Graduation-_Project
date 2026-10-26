@@ -119,7 +119,7 @@ function buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, br
             return `
                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; margin-bottom: 12px; text-align: ${align};">
                     <div style="font-size: 14px; font-weight: bold; color: #0f172a; margin-bottom: 4px;">
-                        📌 ${sourceLabel} ${repoContext ? `<span style="color: #64748b; font-size: 12px; font-weight: normal;">— ${repoContext}</span>` : ''}
+                        ${sourceLabel} ${repoContext ? `<span style="color: #64748b; font-size: 12px; font-weight: normal;">— ${repoContext}</span>` : ''}
                     </div>
                     <div style="font-size: 12px; color: #475569; margin-bottom: 8px;">
                         ${lang === 'ar' ? 'رابط الموضع الفعلي الذي يحتوي على التسريب:' : 'Direct link to the source containing the leak:'}
@@ -127,11 +127,11 @@ function buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, br
                     ${sourceUrl ? `
                     <div style="margin: 8px 0;">
                         <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 6px;">
-                            ${lang === 'ar' ? 'الانتقال إلى مصدر التسريب مباشرة ↗' : 'View Leak Source Directly ↗'}
+                            ${lang === 'ar' ? 'الانتقال إلى مصدر التسريب مباشرة' : 'View Leak Source Directly'}
                         </a>
                         ${(exp.source_type?.includes('commit') || sourceUrl.includes('/commit/')) ? `
                         <a href="${sourceUrl.endsWith('.patch') ? sourceUrl : sourceUrl + '.patch'}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #d97706; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 6px; margin-inline-start: 6px;">
-                            ${lang === 'ar' ? 'رابط التسريب ↗' : 'Leak Link ↗'}
+                            ${lang === 'ar' ? 'رابط التسريب' : 'Leak Link'}
                         </a>
                         ` : ''}
                     </div>
@@ -146,7 +146,7 @@ function buildReportHtml({ t, lang, bodyText, statusLabel, risk, anonymousId, br
         exposuresHtml = `
             <div style="margin: 25px 0; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
                 <h3 style="margin: 0 0 12px; color: #0f172a; font-size: 16px;">
-                    ${lang === 'ar' ? '🔗 روابط المصادر التي تحتوي على التسريب الفعلي:' : '🔗 Direct Links to Detected Leak Sources:'}
+                    ${lang === 'ar' ? 'روابط المصادر التي تحتوي على التسريب الفعلي:' : 'Direct Links to Detected Leak Sources:'}
                 </h3>
                 ${expItems}
                 <p style="margin: 8px 0 0; font-size: 12px; color: #64748b;">

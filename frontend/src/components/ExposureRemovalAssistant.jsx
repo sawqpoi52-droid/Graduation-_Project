@@ -260,7 +260,7 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
             'Awaiting Owner': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300',
             'Under Review': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 border-cyan-300',
             'Verified Removed': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-400 font-extrabold',
-            'Partially Mitigated': 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-400 font-bold',
+            'Partially Mitigated': 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300 border-teal-400 font-bold',
             'Failed': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-300',
             'Verification Inconclusive': 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-300'
         };
@@ -382,7 +382,8 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
                     const plan = activePlan[occId];
                     const vRes = verificationResult[occId];
                     const evPkg = evidencePackage[occId];
-                    const isSeedTest = occ.data_origin === 'seeded_test';
+                    const isLaneB = occ.lane === 'B';
+                    const isHackerNews = occ.occurrence_type === 'HN_ITEM' || occ.occurrence_type?.includes('HN') || occ.type === 'HN_ITEM' || occ.source === 'hn' || (occ.permalink && occ.permalink.includes('news.ycombinator.com'));
 
                     return (
                         <div
@@ -395,11 +396,6 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
                                     <div className="flex flex-wrap items-center gap-2">
                                         {getLaneBadge(occ.lane, occ.occurrence_type)}
                                         {getStatusBadge(occ.status)}
-                                        {isSeedTest && (
-                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-100 border border-amber-300">
-                                                🏷️ {t('test_data_badge')}
-                                            </span>
-                                        )}
                                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                                             [{occ.occurrence_type}]
                                         </span>
@@ -482,32 +478,162 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
                                         <span>{t('btn_plan')}</span>
                                     </button>
 
-                                    {/* Direct Verifier Button */}
-                                    <button
-                                        type="button"
-                                        disabled={verifying[occId]}
-                                        onClick={() => handleVerify(occId)}
-                                        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-                                    >
-                                        {verifying[occId] ? (
-                                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                        ) : (
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-400">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        )}
-                                        <span>{t('btn_verify')}</span>
-                                    </button>
-
                                     {/* Lane C Evidence Package Button */}
                                     <button
                                         type="button"
                                         onClick={() => handleGenerateEvidence(occId)}
                                         className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
                                     >
-                                        <span>📋 {t('btn_evidence')}</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                        </svg>
+                                        <span>{t('btn_evidence')}</span>
                                     </button>
                                 </div>
+
+                                {/* Lane B Direct Guidance Panel */}
+                                {isLaneB && (
+                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600 dark:text-blue-400">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                                            </svg>
+                                            <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                                                {isAr ? 'إرشادات معالجة التسريب في مستودع خارجي (طرف ثالث):' : 'Third-Party Repository Remediation Instructions:'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                            {t('laneB_notice')}
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                                            {occ.repo_full_name && (
+                                                <a
+                                                    href={`https://github.com/${occ.repo_full_name}/issues/new?title=${encodeURIComponent('Privacy Concern: Exposed Contact Information')}&body=${encodeURIComponent(`Hello maintainer,\n\nI noticed that my personal contact email was exposed in this repository at file: ${occ.file_path || 'source'}.\n\nCould you please remove or redact this personal information?\n\nThank you for your cooperation.`)}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors flex items-center justify-between group"
+                                                >
+                                                    <div className="space-y-0.5">
+                                                        <div className="font-bold text-xs text-blue-600 dark:text-blue-400 group-hover:underline">
+                                                            {t('laneB_open_issue')}
+                                                        </div>
+                                                        <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                                                            {occ.repo_full_name}/issues/new
+                                                        </div>
+                                                    </div>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-blue-600">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                                    </svg>
+                                                </a>
+                                            )}
+                                            <a
+                                                href="https://support.github.com/contact/private-information"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors flex items-center justify-between group"
+                                            >
+                                                <div className="space-y-0.5">
+                                                    <div className="font-bold text-xs text-blue-600 dark:text-blue-400 group-hover:underline">
+                                                        {t('laneB_github_dmca')}
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                                                        support.github.com
+                                                    </div>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-blue-600">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-semibold text-xs text-gray-700 dark:text-gray-300">
+                                                    {t('exposureTemplateMessage')}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopy(`Hello Maintainer (@${occ.repo_full_name ? occ.repo_full_name.split('/')[0] : 'owner'}),\n\nI noticed my personal contact email was committed in your repository (${occ.repo_full_name || ''}) at path: ${occ.file_path || ''}.\n\nAccording to GitHub privacy policies, I kindly ask you to remove or redact this email address from the file and git history.\n\nThank you for your understanding.`, `tpl_b_${occId}`)}
+                                                    className="px-2.5 py-1 text-xs font-bold rounded bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                                                >
+                                                    {copiedKey === `tpl_b_${occId}` ? (isAr ? 'تم النسخ!' : 'Copied!') : t('laneB_copy_msg')}
+                                                </button>
+                                            </div>
+                                            <p className="text-[11px] font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 p-2 rounded border border-gray-100 dark:border-gray-800 leading-normal" dir="ltr">
+                                                {`Hello Maintainer, I noticed my email was committed in repository ${occ.repo_full_name || ''} at path ${occ.file_path || ''}. Please remove or redact this personal data.`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Hacker News Direct Guidance Panel */}
+                                {isHackerNews && (
+                                    <div className="p-4 rounded-xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/60 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-orange-600 dark:text-orange-400">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                                            </svg>
+                                            <span className="font-bold text-xs text-orange-950 dark:text-orange-200">
+                                                {isAr ? 'إرشادات معالجة التسريب في منصة Hacker News:' : 'Hacker News Remediation Instructions:'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-orange-900/80 dark:text-orange-300/90 leading-relaxed">
+                                            {t('laneC_notice')}
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                                            <a
+                                                href={occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 hover:border-orange-400 dark:hover:border-orange-500 transition-colors flex items-center justify-between group"
+                                            >
+                                                <div className="space-y-0.5">
+                                                    <div className="font-bold text-xs text-orange-600 dark:text-orange-400 group-hover:underline">
+                                                        {t('laneC_view_item')}
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                                                        news.ycombinator.com/item?id={occ.comment_id || 39120485}
+                                                    </div>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-orange-600">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                                </svg>
+                                            </a>
+                                            <a
+                                                href={`mailto:hn@ycombinator.com?subject=${encodeURIComponent(`Personal Data Removal Request - HN Item ${occ.comment_id || ''}`)}&body=${encodeURIComponent(`Hello Hacker News Moderators,\n\nI am requesting the removal or redaction of my personal email address exposed in the following public discussion:\n${occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}\n\nThank you for your prompt assistance.`)}`}
+                                                className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 hover:border-orange-400 dark:hover:border-orange-500 transition-colors flex items-center justify-between group"
+                                            >
+                                                <div className="space-y-0.5">
+                                                    <div className="font-bold text-xs text-orange-600 dark:text-orange-400 group-hover:underline">
+                                                        {t('laneC_email_mods')}
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                                                        hn@ycombinator.com
+                                                    </div>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400 group-hover:text-orange-600">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-semibold text-xs text-gray-700 dark:text-gray-300">
+                                                    {isAr ? 'نموذج رسالة جاهز للبريد الإلكتروني:' : 'Ready Email Template:'}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopy(`To: hn@ycombinator.com\nSubject: Personal Data Removal Request - HN Item ${occ.comment_id || ''}\n\nHello Hacker News Moderators,\n\nI am requesting the removal or redaction of my personal email address exposed in the following public discussion:\n${occ.permalink || `https://news.ycombinator.com/item?id=${occ.comment_id || 39120485}`}\n\nThank you for your assistance.`, `tpl_c_${occId}`)}
+                                                    className="px-2.5 py-1 text-xs font-bold rounded bg-orange-600 hover:bg-orange-700 text-white cursor-pointer"
+                                                >
+                                                    {copiedKey === `tpl_c_${occId}` ? (isAr ? 'تم النسخ!' : 'Copied!') : t('laneC_copy_email')}
+                                                </button>
+                                            </div>
+                                            <p className="text-[11px] font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 p-2 rounded border border-gray-100 dark:border-gray-800 leading-normal" dir="ltr">
+                                                {`Hello Hacker News Moderators, I request removal of my email exposed in item ${occ.comment_id || 39120485}.`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Dry-Run Plan Display Box */}
                                 {plan && (
@@ -613,7 +739,10 @@ export default function ExposureRemovalAssistant({ email, t, lang }) {
                                                 rel="noopener noreferrer"
                                                 className="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold inline-flex items-center gap-1.5"
                                             >
-                                                <span>فتح نموذج الخصوصية الرسمي لـ GitHub ↗</span>
+                                                <span>{isAr ? 'فتح نموذج الخصوصية الرسمي لـ GitHub' : 'Open Official GitHub Privacy Form'}</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                                </svg>
                                             </a>
                                             <button
                                                 type="button"

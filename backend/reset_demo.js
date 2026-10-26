@@ -36,6 +36,23 @@ async function resetDemo() {
     `, [emailHash, email, require('crypto').createHash('sha256').update(email).digest('hex')]);
 
     console.log('[Reset Demo] Database exposure statuses reset to "Detected".');
+
+    // 3. Commit and push the exposed email back to GitHub so GitHub reflects the leak
+    const { execFile } = require('child_process');
+    const projectRoot = path.resolve(__dirname, '..');
+    await new Promise((resolve) => {
+        execFile('git', ['add', 'package.json'], { cwd: projectRoot }, (err1) => {
+            if (err1) return resolve();
+            execFile('git', ['commit', '-m', 'test: reset exposed email in package.json for demonstration'], { cwd: projectRoot }, (err2) => {
+                if (err2) return resolve();
+                execFile('git', ['push', 'origin', 'main'], { cwd: projectRoot }, (err3) => {
+                    if (!err3) console.log('[Reset Demo] Successfully pushed exposed email baseline to GitHub origin!');
+                    resolve();
+                });
+            });
+        });
+    });
+
     console.log('[Reset Demo] Ready for demonstration!');
     process.exit(0);
 }

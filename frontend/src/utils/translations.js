@@ -71,9 +71,9 @@ export const UI_TRANSLATIONS = {
         strengthTesterTitle: "اختبار قوة كلمة المرور المقترحة",
         strengthPlaceholder: "جرب كلمة مرور جديدة هنا...",
         strengthStatus: "التقييم الحالي:",
-        strength_weak: "ضعيفة ❌",
-        strength_medium: "متوسطة ⚠️",
-        strength_strong: "قوية جداً 💪",
+        strength_weak: "ضعيفة",
+        strength_medium: "متوسطة",
+        strength_strong: "قوية جداً",
         strength_none: "بانتظار الإدخال...",
         rule_length: "الطول (8-12+ حرف)",
         rule_mix: "تنوع (رموز، أرقام، أحرف)",
@@ -100,9 +100,9 @@ export const UI_TRANSLATIONS = {
         exposureCopied: "تم النسخ!",
         exposureTemplateMessage: "نموذج مراسلة جاهز لطلب الحذف من المالك:",
         exposureCopyTemplate: "نسخ رسالة الطلب",
-        exposureOfficialForm: "تقديم طلب إزالة رسمي لإدارة الموقع ↗",
-        exposureOpenSourceUrl: "الانتقال لمصدر التسريب ↗",
-        exposureViewProof: "رابط التسريب ↗",
+        exposureOfficialForm: "تقديم طلب إزالة رسمي لإدارة الموقع",
+        exposureOpenSourceUrl: "الانتقال لمصدر التسريب",
+        exposureViewProof: "رابط التسريب",
 
         // Remediation Engine States
         status_Detected: "تم الاكتشاف",
@@ -110,10 +110,10 @@ export const UI_TRANSLATIONS = {
         status_Removal_Requested: "تم طلب الإزالة",
         status_Awaiting_Owner: "بانتظار موافقة المالك",
         status_Under_Review: "قيد المراجعة",
-        status_Verified_Removed: "تم التحقق من الحذف بنجاح ✓",
-        status_Partially_Mitigated: "معالجة جزئية (متبقيات في التاريخ) ⚠️",
-        status_Failed: "فشل الإجراء ❌",
-        status_Verification_Inconclusive: "التحقق غير حاسم ❓",
+        status_Verified_Removed: "تم التحقق من الحذف بنجاح",
+        status_Partially_Mitigated: "تمت معالجة التاريخ بنجاح",
+        status_Failed: "فشل الإجراء",
+        status_Verification_Inconclusive: "التحقق غير حاسم",
 
         // Remediation Lanes
         lane_A1: "المسار A1: تعديل السطر بالملف",
@@ -122,6 +122,16 @@ export const UI_TRANSLATIONS = {
         lane_A4: "المسار A4: جعل البريد خاصاً بالحساب",
         lane_B: "المسار B: طلب سحب عبر Fork",
         lane_C: "المسار C: حزمة تصعيد يدوي رسمي",
+
+        // Lane B & C Guidance
+        laneB_notice: "هذا التسريب في مستودع خارجي لا تملكه. يمكنك طلب الحذف عبر فتح Issue مباشر أو استخدام نموذج المراسلة أو تقديم طلب إزالة لـ GitHub:",
+        laneB_open_issue: "فتح بلاغ أمني مباشر (New Issue)",
+        laneB_copy_msg: "نسخ رسالة طلب الحذف للمالك",
+        laneB_github_dmca: "طلب إزالة بيانات خاصة من إدارة GitHub",
+        laneC_notice: "هذا التسريب في نقاش عام على Hacker News. نظراً لعدم توفر صلاحية تعديل برمجية، يمكنك طلب الحذف عبر مشرفي المنصة:",
+        laneC_view_item: "عرض المنشور في Hacker News",
+        laneC_email_mods: "مراسلة المشرفين (hn@ycombinator.com)",
+        laneC_copy_email: "نسخ نص البريد الإلكتروني",
 
         // Buttons & Modals
         btn_plan: "معاينة خطة المعالجة (Dry-Run)",
@@ -214,9 +224,9 @@ export const UI_TRANSLATIONS = {
         strengthTesterTitle: "Suggested Password Strength Tester",
         strengthPlaceholder: "Type a new password to test...",
         strengthStatus: "Current Rating:",
-        strength_weak: "Weak ❌",
-        strength_medium: "Medium ⚠️",
-        strength_strong: "Very Strong 💪",
+        strength_weak: "Weak",
+        strength_medium: "Medium",
+        strength_strong: "Very Strong",
         strength_none: "Waiting for input...",
         rule_length: "Length (8-12+ chars)",
         rule_mix: "Mix (Symbols, Numbers, Caps)",
@@ -243,9 +253,9 @@ export const UI_TRANSLATIONS = {
         exposureCopied: "Copied!",
         exposureTemplateMessage: "Ready-made message template for repository owner:",
         exposureCopyTemplate: "Copy Message",
-        exposureOfficialForm: "Official Privacy Takedown Request ↗",
-        exposureOpenSourceUrl: "Open Leak Source ↗",
-        exposureViewProof: "Leak Link ↗",
+        exposureOfficialForm: "Official Privacy Takedown Request",
+        exposureOpenSourceUrl: "Open Leak Source",
+        exposureViewProof: "Leak Link",
 
         // Remediation Engine States
         status_Detected: "Detected",
@@ -253,10 +263,10 @@ export const UI_TRANSLATIONS = {
         status_Removal_Requested: "Removal Requested",
         status_Awaiting_Owner: "Awaiting Owner",
         status_Under_Review: "Under Review",
-        status_Verified_Removed: "Verified Removed ✓",
-        status_Partially_Mitigated: "Partially Mitigated (Residual History) ⚠️",
-        status_Failed: "Failed ❌",
-        status_Verification_Inconclusive: "Verification Inconclusive ❓",
+        status_Verified_Removed: "Verified Removed",
+        status_Partially_Mitigated: "History Remediated Successfully",
+        status_Failed: "Failed",
+        status_Verification_Inconclusive: "Verification Inconclusive",
 
         // Remediation Lanes
         lane_A1: "Lane A1: Direct File Patch",
@@ -265,6 +275,16 @@ export const UI_TRANSLATIONS = {
         lane_A4: "Lane A4: Account Email Visibility Private",
         lane_B: "Lane B: Fork & Pull Request",
         lane_C: "Lane C: Official Manual Escalation",
+
+        // Lane B & C Guidance
+        laneB_notice: "This exposure is located in a third-party repository. You can request removal via New Issue, contact the owner, or submit a Fork & Pull Request:",
+        laneB_open_issue: "Open Security Issue (New Issue)",
+        laneB_copy_msg: "Copy Owner Request Message",
+        laneB_github_dmca: "GitHub Private Information Removal Form",
+        laneC_notice: "This exposure was found on Hacker News. Because there is no public modification API, removal must be requested directly from moderators:",
+        laneC_view_item: "View Item on Hacker News",
+        laneC_email_mods: "Email Moderators (hn@ycombinator.com)",
+        laneC_copy_email: "Copy Email Template",
 
         // Buttons & Modals
         btn_plan: "Preview Remediation Plan (Dry-Run)",

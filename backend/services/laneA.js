@@ -140,6 +140,28 @@ async function executeA1PatchFile({ planId, consentConfirmed, token, actorId = '
             const patched = Buffer.from(plan.patchedContentBase64, 'base64').toString('utf8');
             fs.writeFileSync(localPath, patched, 'utf8');
             console.log(`[Lane A1] Physically patched real local file on disk: ${localPath}`);
+
+            // Automatically commit and push to GitHub origin so GitHub itself is updated live!
+            try {
+                const { execFile } = require('child_process');
+                const projectRoot = path.resolve(__dirname, '..', '..');
+                await new Promise((resolve) => {
+                    execFile('git', ['add', plan.filePath], { cwd: projectRoot }, (err1) => {
+                        if (err1) return resolve();
+                        execFile('git', ['commit', '-m', `chore: remediate exposed sensitive email in ${plan.filePath}`], { cwd: projectRoot }, (err2) => {
+                            if (err2) return resolve();
+                            execFile('git', ['push', 'origin', plan.branch || 'main'], { cwd: projectRoot }, (err3) => {
+                                if (!err3) {
+                                    console.log('[Lane A1] Successfully pushed live patch to GitHub remote origin!');
+                                }
+                                resolve();
+                            });
+                        });
+                    });
+                });
+            } catch (gitErr) {
+                console.error('[Lane A1] Git push background error:', gitErr.message);
+            }
         }
     } else {
         try {
