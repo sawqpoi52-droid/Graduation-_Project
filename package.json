@@ -1,7 +1,7 @@
 {
     "name": "securecheck-project",
     "version": "1.0.0",
-    "author": "sawqpoi52-droid <sawqpoi52@gmail.com>",
+    "author": "sawqpoi52-droid <[email removed]>",
     "private": true,
     "scripts": {
         "start": "node backend/server.js",
